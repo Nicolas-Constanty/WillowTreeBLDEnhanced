@@ -406,6 +406,7 @@ namespace WillowTree
         public string[] EchoStringsPT2;
         public int[,] EchoValuesPT2;
         public byte[] Unknown2;
+        public byte[] Unknown3;
         //public byte[] MiscData;
 
         // Temporary lists used for primary pack data when the inventory is split
@@ -603,6 +604,12 @@ namespace WillowTree
 
                 OpenedWSG = inputFile;
             }
+        }
+
+        private static bool EOF(BinaryReader binaryReader)
+        {
+            var bs = binaryReader.BaseStream;
+            return (bs.Position == bs.Length);
         }
 
         ///<summary>Reads and decompiles the contents of a WSG</summary>
@@ -810,6 +817,14 @@ namespace WillowTree
                     RemainingBytes -= SectionLength + 8;
                     DLC.DataSections.Add(Section);
                 }
+                var temp = new List<byte>();
+
+                while (!EOF(TestReader))
+                {
+                    temp.Add(ReadBytes(TestReader, 1, EndianWSG)[0]);
+                }
+
+                Unknown3 = temp.ToArray();
             }
         }
 
@@ -1327,6 +1342,7 @@ namespace WillowTree
                 Out.Write(Section.RawData);
                 Section.BaseData = null; // BaseData isn't needed anymore.  Free it.
             }
+            Write(Out, Unknown3, EndianWSG);
 
             // Clear the temporary lists used to split primary and DLC pack data
             ItemValues1 = null;

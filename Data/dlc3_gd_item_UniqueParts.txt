@@ -1,0 +1,24 @@
+[Title.Title_U_Atlas_Omega]
+Description="The Alpha and that other thing."
+PartName="Omega"
+Rarity=WeaponPartRarity6_Legendary
+[Title.Title_P_Pangolin_Ironclad]
+Description="I stand unvanquished!"
+PartName="Ironclad"
+Rarity=WeaponPartRarity6_Legendary
+[Title.Title_P_Anshin_Rose]
+Description="Beauty and Life"
+PartName="Rose"
+Rarity=WeaponPartRarity6_Legendary
+[Shield.body4_Atlas_Omega]
+PartName="OO"
+TechLevelIncrease=2
+Rarity=WeaponPartRarity6_Legendary
+[Shield.body4_Anshin_Rose]
+PartName="AWE"
+TechLevelIncrease=2
+Rarity=WeaponPartRarity6_Legendary
+[Shield.body3_Pangolin_Ironclad]
+PartName="OC"
+TechLevelIncrease=2
+Rarity=WeaponPartRarity6_Legendary

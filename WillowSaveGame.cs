@@ -800,11 +800,8 @@ private static string ReadString(BinaryReader reader, ByteOrder endian)
                             DLC.BankSize = ReadInt32(dlcDataReader, EndianWSG);
                             int bankEntriesCount = ReadInt32(dlcDataReader, EndianWSG);
                             DLC.BankInventory = new List<BankEntry>();
-                            Console.WriteLine(DLC.BankSize);
-                            Console.WriteLine(bankEntriesCount);
                             for (int i = 0; i < bankEntriesCount; i++)
                             {
-                                Console.WriteLine(i);
                                 DLC.BankInventory.Add(ReadBankEntry(dlcDataReader, EndianWSG));
                             }
                             break;
@@ -823,13 +820,10 @@ private static string ReadString(BinaryReader reader, ByteOrder endian)
                         case DLC_Data.Section4Id:
                             DLC.HasSection4 = true;
                             DLC.SecondaryPackEnabled = dlcDataReader.ReadByte();
-                            Console.WriteLine(DLC.SecondaryPackEnabled);
                             DLC.NumberOfItems = ReadInt32(dlcDataReader, EndianWSG);
-                            Console.WriteLine(DLC.NumberOfItems);
                             ReadObjects(dlcDataReader, ref Items, DLC.NumberOfItems, sizeof(int), true);
                             NumberOfItems += DLC.NumberOfItems;
                             DLC.NumberOfWeapons = ReadInt32(dlcDataReader, EndianWSG);
-                            Console.WriteLine(DLC.NumberOfWeapons);
                             ReadObjects(dlcDataReader, ref Weapons, DLC.NumberOfWeapons, sizeof(int), true);
                             NumberOfWeapons += DLC.NumberOfWeapons;
                             break;
@@ -903,8 +897,6 @@ private static string ReadString(BinaryReader reader, ByteOrder endian)
         {
             var rd = new RawDataInfo();
             int count = -paddingSize;
-            //rd.nextValue = 0;
-            Console.WriteLine(paddingSize);
             rd.data = ReadBytes(reader, paddingSize, EndianWSG);
             bool findString = false;
             while (!findString)
@@ -933,10 +925,6 @@ private static string ReadString(BinaryReader reader, ByteOrder endian)
             List<string> strings = new List<string>();
             for (int TotalStrings = 0; TotalStrings < 9; TotalStrings++)
                 strings.Add(ReadString(reader, bo));
-            foreach (var item in strings)
-            {
-                Console.WriteLine(item);
-            }
             return strings;
         }
 
@@ -945,10 +933,6 @@ private static string ReadString(BinaryReader reader, ByteOrder endian)
             List<string> strings = new List<string>();
             for (int TotalStrings = 0; TotalStrings < 14; TotalStrings++)
                 strings.Add(ReadString(reader, bo));
-            foreach (var item in strings)
-            {
-                Console.WriteLine(item);
-            }
             return strings;
         }
 
@@ -977,13 +961,11 @@ private static string ReadString(BinaryReader reader, ByteOrder endian)
             {
                 if ((item.Values[3] == 0) || (item.Strings[0].Substring(0, 3) != "dlc"))
                 {
-                    Console.WriteLine("NOT DLC " + (isDLC ? 0 : paddingSize));
                     rd = CheckIntPadding(reader, isDLC ? 0 : paddingSize);
                 }
                 else
                 {
                     paddingSize += sizeof(int);
-                    Console.WriteLine("DLC " + paddingSize);
                     rd = CheckIntPadding(reader, paddingSize);
                 }
                 item.Paddings = rd.data;
@@ -994,10 +976,8 @@ private static string ReadString(BinaryReader reader, ByteOrder endian)
         private void ReadObjects<T>(BinaryReader reader, ref List<T> Objects, int groupSize, int paddingSize, bool isDLC) where T : Object, new()
         {
             RawDataInfo rd = null;
-            Console.WriteLine(groupSize);
             for (int Progress = 0; Progress < groupSize; Progress++)
             {
-                Console.WriteLine(Progress + "/" + groupSize);
                 Objects.Add(ReadObject<T>(reader, ref rd, paddingSize, isDLC));
             }
         }
@@ -1499,11 +1479,7 @@ private static string ReadString(BinaryReader reader, ByteOrder endian)
         {
             BankEntry entry = new BankEntry();
             int partCount;
-
-            
             entry.TypeId = br.ReadByte();
-
-            Console.WriteLine("Bank entry to be written has Type ID.  TypeId = " + entry.TypeId);
 
             switch (entry.TypeId)
             {

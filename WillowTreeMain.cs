@@ -66,6 +66,23 @@ namespace WillowTree
 
             return Name;
         }
+
+        public string GetName(XmlFile xml, List<string> PartArray, string INIValueToRetrieve)
+        {
+            string Name = "";
+            foreach (var name in PartArray)
+            {
+
+                string readValue = xml.XmlReadValue(name, INIValueToRetrieve);
+
+                if (Name == "" && readValue != null)
+                    Name = readValue;
+                else if (readValue != null && readValue != "")
+                    Name = (Name + " " + readValue);
+            }
+
+            return Name;
+        }
         /*public string GetName(Ini.IniFile INI, string[] PartArray, int DesiredPart, string INIValueToRetrieve)
         {
             string Name = "";
@@ -166,6 +183,51 @@ namespace WillowTree
 
             return itemtypeprefix + Name;
         }
+
+        public string GetName(XmlFile xml, List<string> PartArray, string INIValueToRetrieve, string Itemtype)
+        {
+            string Name = "";
+            string itemtypeprefix = "";
+            int count = 0;
+            foreach (var item in PartArray)
+            {
+
+                // Get the Weapontype from part0 (Itemgrade)
+                //gd_itemgrades.Weapons_Eridan.ItemGrade_Eridan_SMG_Blaster
+                if ((Itemtype == "Item") && (count == 1))
+                {
+                    //Type in Part2 -> strParts[2]
+                    // itemtypeprefix = PartArray[DesiredPart][build].Substring(PartArray[DesiredPart][build].LastIndexOf(".") + 1);
+                    // itemtypeprefix = itemtypeprefix.Substring(itemtypeprefix.IndexOf("_") + 1) + " ";
+                }
+
+                if ((Itemtype == "Weapon") && (count == 0))
+                {
+                    //Type in Part1 -> strParts[1]
+
+                    // itemtypeprefix = PartArray[DesiredPart][build].Substring(PartArray[DesiredPart][build].LastIndexOf(".") + 1);
+                    // itemtypeprefix = itemtypeprefix.Substring(itemtypeprefix.IndexOf("_") + 1) + " ";
+                    // if (itemtypeprefix.StartsWith("Weapon_"))
+                    //    itemtypeprefix = itemtypeprefix.Substring(7);
+
+                }
+
+                // Names in Weapons only in Build 12,13 Items only in 7,8
+                if (((Itemtype == "Weapon") && (count == 12 || count == 13)) || ((Itemtype == "Item") && (count == 7 || count == 8)))
+                {
+                    string iniReadvalue = xml.XmlReadValue(item, INIValueToRetrieve);
+
+                    if (Name == "" && iniReadvalue != "")
+                        Name = iniReadvalue;
+                    else if (iniReadvalue != null && iniReadvalue != "")
+                        Name = (Name + " " + iniReadvalue);
+                }
+                count++;
+            }
+
+            return itemtypeprefix + Name;
+        }
+
         // 3 references - read name from xml of 12+13 weapon or 7+8 item, analyze 1 weapon or 2 item for class - output is class + name
         public string GetName(XmlFile xml, List<string> PartArray, int NumberOfSubParts, string INIValueToRetrieve, string Itemtype)
         {
@@ -418,10 +480,10 @@ namespace WillowTree
             //Ini.IniFile Titles = new Ini.IniFile(AppDir + "\\Data\\Titles.ini");
             //TitlesXml.XmlFilename(AppDir + "\\Data\\Titles.ini");
 
-            for (int build = 0; build < CurrentWSG.WeaponStrings.Count; build++)
+            foreach (var wp in CurrentWSG.Weapons)
             {
                 Node TempNode = new Node();
-                TempNode.Text = GetName(TitlesXml, CurrentWSG.WeaponStrings, build, 14, "PartName", "Weapon");
+                TempNode.Text = GetName(TitlesXml, wp.Strings, "PartName", "Weapon");
                 //TempNode.Text = GetName(CurrentWSG.WeaponStrings, build, 14, "PartName");
                 //TempNode.Name = "" + build;
                 //for (int search_name = 0; search_name < 14; search_name++)
@@ -447,37 +509,15 @@ namespace WillowTree
             //Ini.IniFile Titles = new Ini.IniFile(AppDir + "\\Data\\Titles.ini");
             //TitlesXml.XmlFilename(AppDir + "\\Data\\Titles.ini");
 
-            for (int build = 0; build < CurrentWSG.NumberOfItems; build++)
+            int count = 0;
+            foreach (var item in CurrentWSG.Items)
             {
                 Node TempNode = new Node();
-                TempNode.Text = GetName(TitlesXml, CurrentWSG.ItemStrings, build, 9, "PartName", "Item");
-                //TempNode.Name = "" + build;
-                //for (int search_name = 0; search_name < 9; search_name++)
-                //{
-
-                //Node Sub = new Node();
-                //Sub.Text = "Part " + (search_name + 1) + ": " + CurrentWSG.ItemStrings[build][search_name];
-                //TempNode.Nodes.Add(Sub);
-
-                // if (TempNode.Text == "" && Titles.IniReadValue(CurrentWSG.ItemStrings[build][search_name], "PartName") != null)
-                //     TempNode.Text = (Titles.IniReadValue(CurrentWSG.ItemStrings[build][search_name], "PartName"));
-                // else if (Titles.IniReadValue(CurrentWSG.ItemStrings[build][search_name], "PartName") != null)
-                //     TempNode.Text = (TempNode.Text + " " + Titles.IniReadValue(CurrentWSG.ItemStrings[build][search_name], "PartName"));
-
-                // }
+                TempNode.Text = GetName(TitlesXml, item.Strings, "PartName", "Item");
                 if (TempNode.Text == "") TempNode.Text = "Unknown Item";
-                //Node Sub_Ammo = new Node();
-                //Node Sub_Quality = new Node();
-                //Node Sub_Slot = new Node();
-                //Sub_Ammo.Text = "Quantity: " + CurrentWSG.ItemValues[build][0];
-                //Sub_Quality.Text = "Quality Level: " + CurrentWSG.ItemValues[build][1];
-                //Sub_Slot.Text = "Equipped: " + CurrentWSG.ItemValues[build][2];
-                //TempNode.Nodes.Add(Sub_Ammo);
-                //TempNode.Nodes.Add(Sub_Quality);
-                //TempNode.Nodes.Add(Sub_Slot);
                 ItemTree.Nodes.Add(TempNode);
+                count++;
             }
-
         }
         public void DoLockerTree(string InputFile)
         {
@@ -2192,14 +2232,13 @@ namespace WillowTree
                     for (int ndcnt = 0; ndcnt < PartCategories.Nodes.Count; ndcnt++)
                         PartCategories.Nodes[ndcnt].Style = elementStyle15;
 
-                    for (int build_list = 0; build_list < 14; build_list++)
+                    foreach (var weapon in CurrentWSG.Weapons[WeaponTree.SelectedNode.Index].Strings)
                     {
-                        string curWeaponpart = CurrentWSG.WeaponStrings[WeaponTree.SelectedNode.Index][build_list];
-                        CurrentWeaponParts.Items.Add(curWeaponpart);
+                        CurrentWeaponParts.Items.Add(weapon);
                         // highlight the used partfamilies in the partscategories tree
-                        if (curWeaponpart.Contains('.'))
+                        if (weapon.Contains('.'))
                         {
-                            string curWeaponpartclass = curWeaponpart.Substring(0, curWeaponpart.IndexOf('.'));
+                            string curWeaponpartclass = weapon.Substring(0, weapon.IndexOf('.'));
                             for (int ndcnt = 0; ndcnt < PartCategories.Nodes.Count; ndcnt++)
                             {
                                 if (PartCategories.Nodes[ndcnt].Name == curWeaponpartclass)
@@ -2211,18 +2250,18 @@ namespace WillowTree
                         }
 
                     }
-
-                    RemainingAmmo.Value = CurrentWSG.WeaponValues[WeaponTree.SelectedNode.Index][0];
+                    var wp = CurrentWSG.Weapons[WeaponTree.SelectedNode.Index];
+                    RemainingAmmo.Value = wp.Ammo;
                     //Set Itemgrade before Quality -> Level will display correct
-                    WeaponItemGradeSlider.Value = CurrentWSG.WeaponValues[WeaponTree.SelectedNode.Index][3];
+                    WeaponItemGradeSlider.Value = wp.Level;
 
-                    WeaponQuality.Value = CurrentWSG.WeaponValues[WeaponTree.SelectedNode.Index][1];
+                    WeaponQuality.Value = wp.Quality;
 
-                    if (CurrentWSG.WeaponValues[WeaponTree.SelectedNode.Index][2] == 0) EquippedSlot.SelectedItem = "Unequipped";
-                    else if (CurrentWSG.WeaponValues[WeaponTree.SelectedNode.Index][2] == 1) EquippedSlot.SelectedItem = "Slot 1 (Up)";
-                    else if (CurrentWSG.WeaponValues[WeaponTree.SelectedNode.Index][2] == 2) EquippedSlot.SelectedItem = "Slot 2 (Down)";
-                    else if (CurrentWSG.WeaponValues[WeaponTree.SelectedNode.Index][2] == 3) EquippedSlot.SelectedItem = "Slot 3 (Left)";
-                    else if (CurrentWSG.WeaponValues[WeaponTree.SelectedNode.Index][2] > 3) EquippedSlot.SelectedItem = "Slot 4 (Right)";
+                    if (wp.EquipedSlot == 0) EquippedSlot.SelectedItem = "Unequipped";
+                    else if (wp.EquipedSlot == 1) EquippedSlot.SelectedItem = "Slot 1 (Up)";
+                    else if (wp.EquipedSlot == 2) EquippedSlot.SelectedItem = "Slot 2 (Down)";
+                    else if (wp.EquipedSlot == 3) EquippedSlot.SelectedItem = "Slot 3 (Left)";
+                    else if (wp.EquipedSlot > 3) EquippedSlot.SelectedItem = "Slot 4 (Right)";
                 }
 
             }
@@ -2273,26 +2312,28 @@ namespace WillowTree
                 else
                 {
                     CurrentWSG.NumberOfWeapons++;
-                    CurrentWSG.WeaponStrings.Add(new List<string>());
-                    CurrentWSG.WeaponValues.Add(new List<int>());
-                    CurrentWSG.WeaponStrings[CurrentWSG.NumberOfWeapons - 1].Add("Item Grade");
-                    CurrentWSG.WeaponStrings[CurrentWSG.NumberOfWeapons - 1].Add("Manufacturer");
-                    CurrentWSG.WeaponStrings[CurrentWSG.NumberOfWeapons - 1].Add("Weapon Type");
-                    CurrentWSG.WeaponStrings[CurrentWSG.NumberOfWeapons - 1].Add("Body");
-                    CurrentWSG.WeaponStrings[CurrentWSG.NumberOfWeapons - 1].Add("Grip");
-                    CurrentWSG.WeaponStrings[CurrentWSG.NumberOfWeapons - 1].Add("Mag");
-                    CurrentWSG.WeaponStrings[CurrentWSG.NumberOfWeapons - 1].Add("Barrel");
-                    CurrentWSG.WeaponStrings[CurrentWSG.NumberOfWeapons - 1].Add("Sight");
-                    CurrentWSG.WeaponStrings[CurrentWSG.NumberOfWeapons - 1].Add("Stock");
-                    CurrentWSG.WeaponStrings[CurrentWSG.NumberOfWeapons - 1].Add("Action");
-                    CurrentWSG.WeaponStrings[CurrentWSG.NumberOfWeapons - 1].Add("Accessory");
-                    CurrentWSG.WeaponStrings[CurrentWSG.NumberOfWeapons - 1].Add("Material");
-                    CurrentWSG.WeaponStrings[CurrentWSG.NumberOfWeapons - 1].Add("Prefix");
-                    CurrentWSG.WeaponStrings[CurrentWSG.NumberOfWeapons - 1].Add("Title");
-                    CurrentWSG.WeaponValues[(CurrentWSG.NumberOfWeapons - 1)].Add(0);
-                    CurrentWSG.WeaponValues[(CurrentWSG.NumberOfWeapons - 1)].Add(0);
-                    CurrentWSG.WeaponValues[(CurrentWSG.NumberOfWeapons - 1)].Add(0);
-                    CurrentWSG.WeaponValues[(CurrentWSG.NumberOfWeapons - 1)].Add(0);
+                    var weapon = new WillowSaveGame.Weapon();
+                    weapon.Strings = new List<string>();
+                    weapon.Values = new List<int>();
+                    weapon.Strings.Add("Item Grade");
+                    weapon.Strings.Add("Manufacturer");
+                    weapon.Strings.Add("Weapon Type");
+                    weapon.Strings.Add("Body");
+                    weapon.Strings.Add("Grip");
+                    weapon.Strings.Add("Mag");
+                    weapon.Strings.Add("Barrel");
+                    weapon.Strings.Add("Sight");
+                    weapon.Strings.Add("Stock");
+                    weapon.Strings.Add("Action");
+                    weapon.Strings.Add("Accessory");
+                    weapon.Strings.Add("Material");
+                    weapon.Strings.Add("Prefix");
+                    weapon.Strings.Add("Title");
+                    weapon.Values.Add(0);
+                    weapon.Values.Add(0);
+                    weapon.Values.Add(0);
+                    weapon.Values.Add(0);
+                    CurrentWSG.Weapons.Add(weapon);
 
                     Node TempNode = new Node();
                     TempNode.Text = "New Weapon";
@@ -2322,17 +2363,17 @@ namespace WillowTree
                 }
                 else
                 {
-                    for (int Progress = 0; Progress < 14; Progress++)
-                        CurrentWSG.WeaponStrings[WeaponTree.SelectedNode.Index][Progress] = (string)CurrentWeaponParts.Items[Progress];
-                    CurrentWSG.WeaponValues[WeaponTree.SelectedNode.Index][0] = (int)RemainingAmmo.Value;
-
-                    CurrentWSG.WeaponValues[WeaponTree.SelectedNode.Index][1] = (int)WeaponQuality.Value;
-                    CurrentWSG.WeaponValues[WeaponTree.SelectedNode.Index][3] = (int)WeaponItemGradeSlider.Value;
-
-                    CurrentWSG.WeaponValues[WeaponTree.SelectedNode.Index][2] = EquippedSlot.SelectedIndex;
+                    var weapon = CurrentWSG.Weapons[ItemTree.SelectedNode.Index];
+                    for (int Progress = 0; Progress < weapon.Strings.Count; Progress++)
+                        weapon.Strings[Progress] = (string)CurrentItemParts.Items[Progress];
+                    weapon.Values[0] = (int)RemainingAmmo.Value;
+                    weapon.Values[1] = (int)WeaponQuality.Value;
+                    weapon.Values[2] = EquippedSlot.SelectedIndex;
+                    weapon.Values[3] = (int)WeaponItemGradeSlider.Value;
+                    
                     //DoWeaponTree();
                 }
-                WeaponTree.SelectedNode.Text = GetName(TitlesXml, CurrentWSG.WeaponStrings, WeaponTree.SelectedIndex, 14, "PartName", "Weapon");
+                WeaponTree.SelectedNode.Text = GetName(TitlesXml, CurrentWSG.Weapons[WeaponTree.SelectedIndex].Strings, "PartName", "Weapon");
             }
             catch { }
         } // Save Changes
@@ -2403,15 +2444,15 @@ namespace WillowTree
                 }
                 else
                 {
-                    CurrentWSG.WeaponStrings.Add(new List<string>());
-                    CurrentWSG.WeaponValues.Add(new List<int>());
-                    foreach (string i in CurrentWSG.WeaponStrings[Selected])
-                        CurrentWSG.WeaponStrings[CurrentWSG.WeaponStrings.Count - 1].Add(i);
-                    foreach (int i in CurrentWSG.WeaponValues[Selected])
-                        CurrentWSG.WeaponValues[CurrentWSG.WeaponStrings.Count - 1].Add(i);
-                    //CurrentWSG.WeaponValues.Add(CurrentWSG.WeaponValues[Selected]);
-                    CurrentWSG.WeaponValues[CurrentWSG.NumberOfWeapons][2] = 0;
+                    var wp = new WillowSaveGame.Weapon
+                    {
+                        Strings = CurrentWSG.Items[Selected].Strings,
+                        Values = CurrentWSG.Items[Selected].Values
+                    };
+                    
+                    CurrentWSG.Weapons[CurrentWSG.NumberOfWeapons].Values[2] = 0;
                     CurrentWSG.NumberOfWeapons++;
+                    CurrentWSG.Weapons.Add(wp);
                     WeaponTree.Nodes.Add(WeaponTree.SelectedNode.Copy());
                     //DoWeaponTree();
                 }
@@ -2426,8 +2467,7 @@ namespace WillowTree
                 int Selected = WeaponTree.SelectedIndex;
                 WeaponTree.DeselectNode(WeaponTree.SelectedNode, new eTreeAction());
                 WeaponTree.Nodes.RemoveAt(Selected);
-                CurrentWSG.WeaponStrings.RemoveAt(Selected);
-                CurrentWSG.WeaponValues.RemoveAt(Selected);
+                CurrentWSG.Weapons.RemoveAt(Selected);
                 CurrentWSG.NumberOfWeapons--;
                 TrySelectedNode(WeaponTree, Selected);
                 //DoWeaponTree();
@@ -2554,12 +2594,18 @@ namespace WillowTree
                         MessageBox.Show("Invalid file data or unable to read file.");
                         return;
                     }
-                    CurrentWSG.WeaponStrings.Add(WS);
-                    CurrentWSG.WeaponValues.Add(WV);
+                    var wp = new WillowSaveGame.Weapon
+                    {
+                        Strings = WS,
+                        Values = WV
+                    };
+                    
+                    CurrentWSG.Weapons[CurrentWSG.NumberOfWeapons].Values[2] = 0;
                     CurrentWSG.NumberOfWeapons++;
+                    CurrentWSG.Weapons.Add(wp);
 
                     Node TempNode = new Node();
-                    TempNode.Text = GetName(TitlesXml, CurrentWSG.WeaponStrings, CurrentWSG.NumberOfWeapons - 1, 14, "PartName", "Weapon");
+                    TempNode.Text = GetName(TitlesXml, CurrentWSG.Weapons[CurrentWSG.NumberOfWeapons - 1].Strings, "PartName", "Weapon");
                     WeaponTree.Nodes.Add(TempNode);
                     //DoWeaponTree();
                 }
@@ -2616,12 +2662,17 @@ namespace WillowTree
                         return;
                     }
 
-                    CurrentWSG.WeaponStrings.Add(wpnstrings);
-                    CurrentWSG.WeaponValues.Add(wpnvalues);
+                    var wp = new WillowSaveGame.Weapon
+                    {
+                        Strings = wpnstrings,
+                        Values = wpnvalues
+                    };
+
                     CurrentWSG.NumberOfWeapons++;
+                    CurrentWSG.Weapons.Add(wp);
 
                     Node TempNode = new Node();
-                    TempNode.Text = GetName(TitlesXml, CurrentWSG.WeaponStrings, CurrentWSG.NumberOfWeapons - 1, 14, "PartName", "Weapon");
+                    TempNode.Text = GetName(TitlesXml, CurrentWSG.Weapons[CurrentWSG.NumberOfWeapons - 1].Strings, "PartName", "Weapon");
                     WeaponTree.Nodes.Add(TempNode);
                     //DoWeaponTree();
                 }
@@ -2815,9 +2866,15 @@ namespace WillowTree
                             continue;
                         }
 
-                        CurrentWSG.WeaponStrings.Add(wpnstrings);
-                        CurrentWSG.WeaponValues.Add(wpnvalues);
+
+                        var wp = new WillowSaveGame.Weapon
+                        {
+                            Strings = wpnstrings,
+                            Values = wpnvalues
+                        };
+
                         CurrentWSG.NumberOfWeapons++;
+                        CurrentWSG.Weapons.Add(wp);
                     }
 
                     DoWeaponTree();
@@ -2867,18 +2924,22 @@ namespace WillowTree
                         LockerSave.AddItem(WeaponTree.Nodes[Progress].Text, "Weapon", itemparts, itemvalues);
                     }
                 else
-                    for (int Progress = 0; Progress < CurrentWSG.NumberOfWeapons; Progress++)
+                {
+                    int count = 0;
+                    foreach (var weapon in CurrentWSG.Weapons)
                     {
                         itemparts.Clear();
                         itemvalues.Clear();
-                        for (int PartProgress = 0; PartProgress < 14; PartProgress++)
-                            itemparts.Add(CurrentWSG.WeaponStrings[Progress][PartProgress]);
+                        foreach (var s in weapon.Strings)
+                            itemparts.Add(s);
 
-                        for (int PartProgress = 0; PartProgress < 4; PartProgress++)
-                            itemvalues.Add(CurrentWSG.WeaponValues[Progress][PartProgress]);
+                        foreach (var v in weapon.Values)
+                            itemvalues.Add(v);
 
-                        LockerSave.AddItem(WeaponTree.Nodes[Progress].Text, "Weapon", itemparts, itemvalues);
+                        LockerSave.AddItem(WeaponTree.Nodes[count].Text, "Weapon", itemparts, itemvalues);
+                        count++;
                     }
+                } 
             }
         }
 
@@ -3371,7 +3432,7 @@ namespace WillowTree
 
                     for (int build_list = 0; build_list < 9; build_list++)
                     {
-                        string curItempart = CurrentWSG.ItemStrings[ItemTree.SelectedNode.Index][build_list];
+                        string curItempart = CurrentWSG.Items[ItemTree.SelectedNode.Index].Strings[build_list];
                         CurrentItemParts.Items.Add(curItempart);
 
 
@@ -3390,16 +3451,17 @@ namespace WillowTree
                         }
                     }
 
-                    Quantity.Value = CurrentWSG.ItemValues[ItemTree.SelectedNode.Index][0];
-                    ItemQuality.Value = CurrentWSG.ItemValues[ItemTree.SelectedNode.Index][1];
-                    if (CurrentWSG.ItemValues[ItemTree.SelectedNode.Index][2] == 0) Equipped.SelectedItem = "No";
-                    else if (CurrentWSG.ItemValues[ItemTree.SelectedNode.Index][2] == 1) Equipped.SelectedItem = "Yes";
-                    ItemItemGradeSlider.Value = CurrentWSG.ItemValues[ItemTree.SelectedNode.Index][3];
+                    var values = CurrentWSG.Items[ItemTree.SelectedNode.Index].Values;
+                    Quantity.Value = values[0];
+                    ItemQuality.Value = values[1];
+                    if (values[2] == 0) Equipped.SelectedItem = "No";
+                    else if (values[2] == 1) Equipped.SelectedItem = "Yes";
+                    ItemItemGradeSlider.Value = values[3];
                     //string hex = String.Format("{x}", CurrentWSG.ItemValues[ItemTree.SelectedNode.Index][0]);
-                    hex01.Text = String.Format("0x{0:x8}", CurrentWSG.ItemValues[ItemTree.SelectedNode.Index][0]);
-                    hex02.Text = String.Format("0x{0:x8}", CurrentWSG.ItemValues[ItemTree.SelectedNode.Index][1]);
-                    hex03.Text = String.Format("0x{0:x8}", CurrentWSG.ItemValues[ItemTree.SelectedNode.Index][2]);
-                    hex04.Text = String.Format("0x{0:x8}", CurrentWSG.ItemValues[ItemTree.SelectedNode.Index][3]);
+                    hex01.Text = String.Format("0x{0:x8}", values[0]);
+                    hex02.Text = String.Format("0x{0:x8}", values[1]);
+                    hex03.Text = String.Format("0x{0:x8}", values[2]);
+                    hex04.Text = String.Format("0x{0:x8}", values[3]);
                 }
 
 
@@ -3436,21 +3498,23 @@ namespace WillowTree
                 else
                 {
                     CurrentWSG.NumberOfItems++;
-                    CurrentWSG.ItemStrings.Add(new List<string>());
-                    CurrentWSG.ItemValues.Add(new List<int>());
-                    CurrentWSG.ItemStrings[CurrentWSG.NumberOfItems - 1].Add("Item Grade");
-                    CurrentWSG.ItemStrings[CurrentWSG.NumberOfItems - 1].Add("Item Type");
-                    CurrentWSG.ItemStrings[CurrentWSG.NumberOfItems - 1].Add("Body");
-                    CurrentWSG.ItemStrings[CurrentWSG.NumberOfItems - 1].Add("Left Side");
-                    CurrentWSG.ItemStrings[CurrentWSG.NumberOfItems - 1].Add("Right Side");
-                    CurrentWSG.ItemStrings[CurrentWSG.NumberOfItems - 1].Add("Material");
-                    CurrentWSG.ItemStrings[CurrentWSG.NumberOfItems - 1].Add("Manufacturer");
-                    CurrentWSG.ItemStrings[CurrentWSG.NumberOfItems - 1].Add("Prefix");
-                    CurrentWSG.ItemStrings[CurrentWSG.NumberOfItems - 1].Add("Title");
-                    CurrentWSG.ItemValues[(CurrentWSG.NumberOfItems - 1)].Add(1);
-                    CurrentWSG.ItemValues[(CurrentWSG.NumberOfItems - 1)].Add(0);
-                    CurrentWSG.ItemValues[(CurrentWSG.NumberOfItems - 1)].Add(0);
-                    CurrentWSG.ItemValues[(CurrentWSG.NumberOfItems - 1)].Add(0);
+                    var item = new WillowSaveGame.Item();
+                    item.Strings = new List<string>();
+                    item.Values = new List<int>();
+                    item.Strings.Add("Item Grade");
+                    item.Strings.Add("Item Type");
+                    item.Strings.Add("Body");
+                    item.Strings.Add("Left Side");
+                    item.Strings.Add("Right Side");
+                    item.Strings.Add("Material");
+                    item.Strings.Add("Manufacturer");
+                    item.Strings.Add("Prefix");
+                    item.Strings.Add("Title");
+                    item.Values.Add(1);
+                    item.Values.Add(0);
+                    item.Values.Add(0);
+                    item.Values.Add(0);
+                    CurrentWSG.Items.Add(item);
 
                     Node TempNode = new Node();
                     TempNode.Text = "New Item";
@@ -3482,17 +3546,18 @@ namespace WillowTree
 
                 else
                 {
-                    for (int Progress = 0; Progress < 9; Progress++)
-                        CurrentWSG.ItemStrings[ItemTree.SelectedNode.Index][Progress] = (string)CurrentItemParts.Items[Progress];
-                    CurrentWSG.ItemValues[ItemTree.SelectedNode.Index][0] = (int)Quantity.Value;
-                    CurrentWSG.ItemValues[ItemTree.SelectedNode.Index][1] = (int)ItemQuality.Value;
-                    CurrentWSG.ItemValues[ItemTree.SelectedNode.Index][2] = Equipped.SelectedIndex;
-                    CurrentWSG.ItemValues[ItemTree.SelectedNode.Index][3] = (int)ItemItemGradeSlider.Value;
+                    var item = CurrentWSG.Items[ItemTree.SelectedNode.Index];
+                    for (int Progress = 0; Progress < item.Strings.Count; Progress++)
+                        item.Strings[Progress] = (string)CurrentItemParts.Items[Progress];
+                    item.Values[0] = (int)Quantity.Value;
+                    item.Values[1] = (int)ItemQuality.Value;
+                    item.Values[2] = Equipped.SelectedIndex;
+                    item.Values[3] = (int)ItemItemGradeSlider.Value;
                     //DoItemTree();
                 }
                 //DoItemTree();
                 //ItemTree.SelectedNode = ItemTree.Nodes[Selected];
-                ItemTree.SelectedNode.Text = GetName(TitlesXml, CurrentWSG.ItemStrings, ItemTree.SelectedIndex, 14, "PartName", "Item");
+                ItemTree.SelectedNode.Text = GetName(TitlesXml, CurrentWSG.Items[ItemTree.SelectedIndex].Strings, "PartName", "Item");
             }
             catch { }
         } // Save Changes
@@ -3561,15 +3626,13 @@ namespace WillowTree
             }
             else
             {
-                CurrentWSG.ItemStrings.Add(new List<string>());
-                CurrentWSG.ItemValues.Add(new List<int>());
-                foreach (string i in CurrentWSG.ItemStrings[Selected])
-                    CurrentWSG.ItemStrings[CurrentWSG.ItemStrings.Count - 1].Add(i);
-                foreach (int i in CurrentWSG.ItemValues[Selected])
-                    CurrentWSG.ItemValues[CurrentWSG.ItemStrings.Count - 1].Add(i);
-                //CurrentWSG.ItemValues.Add(CurrentWSG.ItemValues[Selected]);
-                CurrentWSG.ItemValues[CurrentWSG.NumberOfItems][2] = 0;
+                var item = new WillowSaveGame.Item();
+                item.Strings = CurrentWSG.Items[Selected].Strings;
+                item.Values = CurrentWSG.Items[Selected].Values;
+                
+                CurrentWSG.Items[CurrentWSG.NumberOfItems].Values[2] = 0;
                 CurrentWSG.NumberOfItems++;
+                CurrentWSG.Items.Add(item);
                 //DoItemTree();
                 ItemTree.Nodes.Add(ItemTree.SelectedNode.Copy());
             }
@@ -3597,8 +3660,7 @@ namespace WillowTree
                 {
                     ItemTree.DeselectNode(ItemTree.SelectedNode, new eTreeAction());
                     ItemTree.Nodes.RemoveAt(Selected);
-                    CurrentWSG.ItemStrings.RemoveAt(Selected);
-                    CurrentWSG.ItemValues.RemoveAt(Selected);
+                    CurrentWSG.Items.RemoveAt(Selected);
                     CurrentWSG.NumberOfItems--;
                     TrySelectedNode(ItemTree, Selected);
 
@@ -3736,13 +3798,16 @@ namespace WillowTree
                         MessageBox.Show("Invalid clipboard data.  Item not inserted.");
                         return;
                     }
-                        
-                    CurrentWSG.ItemStrings.Add(IS);
-                    CurrentWSG.ItemValues.Add(IV);
+                    var item = new WillowSaveGame.Item
+                    {
+                        Strings = IS,
+                        Values = IV
+                    };
+                    CurrentWSG.Items.Add(item);
                     CurrentWSG.NumberOfItems++;
 
                     Node TempNode = new Node();
-                    TempNode.Text = GetName(TitlesXml, CurrentWSG.ItemStrings, CurrentWSG.NumberOfItems - 1, 9, "PartName", "Item");
+                    TempNode.Text = GetName(TitlesXml, item.Strings, "PartName", "Item");
                     ItemTree.Nodes.Add(TempNode);
                 }
             }
@@ -3775,7 +3840,7 @@ namespace WillowTree
                     CurrentWSG.DLC.ItemEquipped.Add(Convert.ToInt32(InOutPartsBox.Lines[11]));
                     CurrentWSG.DLC.ItemLevel.Add(0);
                     Node TempNode = new Node();
-                    TempNode.Text = GetName(TitlesXml, CurrentWSG.ItemStrings, CurrentWSG.NumberOfItems - 1, 9, "PartName", "Item");
+                    TempNode.Text = GetName(TitlesXml, CurrentWSG.Items[CurrentWSG.NumberOfItems - 1].Strings, "PartName", "Item");
                     ItemTree.Nodes.Add(TempNode);
                     //DoDLCItemTree();
                 }
@@ -3801,13 +3866,17 @@ namespace WillowTree
                         MessageBox.Show("Invalid file data.  Item not inserted.");
                         return;
                     }
-   
-                    CurrentWSG.ItemStrings.Add(itemstrings);
-                    CurrentWSG.ItemValues.Add(itemvalues);
+
+                    var item = new WillowSaveGame.Item
+                    {
+                        Strings = itemstrings,
+                        Values = itemvalues
+                    };
+                    CurrentWSG.Items.Add(item);
                     CurrentWSG.NumberOfItems++;
 
                     Node TempNode = new Node();
-                    TempNode.Text = GetName(TitlesXml, CurrentWSG.ItemStrings, CurrentWSG.NumberOfItems - 1, 9, "PartName", "Item");
+                    TempNode.Text = GetName(TitlesXml, item.Strings, "PartName", "Item");
                     ItemTree.Nodes.Add(TempNode);
                 }
             }
@@ -3977,17 +4046,19 @@ namespace WillowTree
                 }
                 else
                 {
-                    for (int Progress = 0; Progress < CurrentWSG.NumberOfItems; Progress++)
+                    int count = 0;
+                    foreach (var item in CurrentWSG.Items)
                     {
                         itemparts.Clear();
                         itemvalues.Clear();
-                        for (int PartProgress = 0; PartProgress < 9; PartProgress++)
-                            itemparts.Add(CurrentWSG.ItemStrings[Progress][PartProgress]);
+                        foreach (var s in item.Strings)
+                            itemparts.Add(s);
 
-                        for (int PartProgress = 0; PartProgress < 4; PartProgress++)
-                            itemvalues.Add(CurrentWSG.ItemValues[Progress][PartProgress]);
+                        foreach (var v in item.Values)
+                            itemvalues.Add(v);
 
-                        LockerSave.AddItem(ItemTree.Nodes[Progress].Text, "Item", itemparts, itemvalues);
+                        LockerSave.AddItem(ItemTree.Nodes[count].Text, "Item", itemparts, itemvalues);
+                        count++;
                     }
                 }
             }
@@ -4058,8 +4129,12 @@ namespace WillowTree
                             break;
                         }
 
-                        CurrentWSG.ItemStrings.Add(itemstrings);
-                        CurrentWSG.ItemValues.Add(itemvalues);
+                        var item = new WillowSaveGame.Item
+                        {
+                            Strings = itemstrings,
+                            Values = itemvalues
+                        };
+                        CurrentWSG.Items.Add(item);
                         CurrentWSG.NumberOfItems++;
                     }
                     DoItemTree();
@@ -5123,17 +5198,22 @@ namespace WillowTree
                     }
 
 
-                    CurrentWSG.NumberOfWeapons = CurrentWSG.NumberOfWeapons + 1;
-                    CurrentWSG.WeaponStrings.Add(new List<string>());
-                    CurrentWSG.WeaponValues.Add(new List<int>());
+                    var wp = new WillowSaveGame.Weapon
+                    {
+                        Strings = new List<string>(),
+                        Values = new List<int>()
+                    };
+
+                    CurrentWSG.NumberOfWeapons++;
+                    CurrentWSG.Weapons.Add(wp);
 
 
                     for (int Progress = 0; Progress < 14; Progress++)
-                        CurrentWSG.WeaponStrings[CurrentWSG.NumberOfWeapons - 1].Add(InOutPartsBox.Lines[Progress]);
+                        wp.Strings.Add(InOutPartsBox.Lines[Progress]);
                     for (int Progress = 0; Progress < 4; Progress++)
-                        CurrentWSG.WeaponValues[CurrentWSG.NumberOfWeapons - 1].Add(Convert.ToInt32(InOutPartsBox.Lines[Progress + 14]));
+                        wp.Values.Add(Convert.ToInt32(InOutPartsBox.Lines[Progress + 14]));
                     Node TempNode = new Node();
-                    TempNode.Text = GetName(TitlesXml, CurrentWSG.WeaponStrings, CurrentWSG.NumberOfWeapons - 1, 14, "PartName", "Weapon");
+                    TempNode.Text = GetName(TitlesXml, CurrentWSG.Weapons[CurrentWSG.NumberOfWeapons - 1].Strings, "PartName", "Weapon");
                     WeaponTree.Nodes.Add(TempNode);
                     //DoWeaponTree();
                 }
@@ -5174,16 +5254,22 @@ namespace WillowTree
 
                     }
 
-
-                    CurrentWSG.ItemStrings.Add(new List<string>());
-                    CurrentWSG.ItemValues.Add(new List<int>());
+                    
                     CurrentWSG.NumberOfItems = CurrentWSG.NumberOfItems + 1;
+                    var item = new WillowSaveGame.Item
+                    {
+                        Strings = new List<string>(),
+                        Values = new List<int>()
+                    };
+
                     for (int Progress = 0; Progress < 9; Progress++)
-                        CurrentWSG.ItemStrings[CurrentWSG.NumberOfItems - 1].Add(InOutPartsBox.Lines[Progress]);
+                        item.Strings.Add(InOutPartsBox.Lines[Progress]);
                     for (int Progress = 0; Progress < 4; Progress++)
-                        CurrentWSG.ItemValues[CurrentWSG.NumberOfItems - 1].Add(Convert.ToInt32(InOutPartsBox.Lines[Progress + 9]));
+                        item.Values.Add(Convert.ToInt32(InOutPartsBox.Lines[Progress + 9]));
+                    CurrentWSG.Items.Add(item);
+                    CurrentWSG.NumberOfItems++;
                     Node TempNode = new Node();
-                    TempNode.Text = GetName(TitlesXml, CurrentWSG.ItemStrings, CurrentWSG.NumberOfItems - 1, 9, "PartName", "Item");
+                    TempNode.Text = GetName(TitlesXml, item.Strings, "PartName", "Item");
                     ItemTree.Nodes.Add(TempNode);
                     //DoItemTree();
                 }
@@ -5290,11 +5376,11 @@ namespace WillowTree
 
         private void ImportAllFromWeapons_Click(object sender, EventArgs e)
         {
-            for (int Progress = 0; Progress < CurrentWSG.NumberOfWeapons; Progress++)
+            foreach (var weapon in CurrentWSG.Weapons)
             {
-                string ItemName = GetLongName(TitlesXml, CurrentWSG.WeaponStrings[Progress][0], CurrentWSG.WeaponStrings[Progress][12], CurrentWSG.WeaponStrings[Progress][13]);
+                string ItemName = GetLongName(TitlesXml, weapon.Strings[0], weapon.Strings[12], weapon.Strings[13]);
                 string UniqueName = XmlLocker.GetUniqueName(ItemName);
-                XmlLocker.AddItem(UniqueName, "Weapon", CurrentWSG.WeaponStrings[Progress], CurrentWSG.WeaponValues[Progress]);
+                XmlLocker.AddItem(UniqueName, "Weapon", weapon.Strings, weapon.Values);
         
                 Node temp = new Node();
                 temp.Text = UniqueName;
@@ -5307,11 +5393,11 @@ namespace WillowTree
 
         private void ImportAllFromItems_Click(object sender, EventArgs e)
         {
-            for (int Progress = 0; Progress < CurrentWSG.NumberOfItems; Progress++)
+            foreach (var item in CurrentWSG.Items)
             {
-                string ItemName = GetLongName(TitlesXml, CurrentWSG.ItemStrings[Progress][1], CurrentWSG.ItemStrings[Progress][7], CurrentWSG.ItemStrings[Progress][8]);
+                string ItemName = GetLongName(TitlesXml, item.Strings[1], item.Strings[7], item.Strings[8]);
                 string UniqueName = XmlLocker.GetUniqueName(ItemName);
-                XmlLocker.AddItem(UniqueName, "Item", CurrentWSG.ItemStrings[Progress], CurrentWSG.ItemValues[Progress]);
+                XmlLocker.AddItem(UniqueName, "Item", item.Strings, item.Values);
 
                 Node temp = new Node();
                 temp.Text = UniqueName;
@@ -5528,8 +5614,8 @@ namespace WillowTree
             string tempNewLevels = Interaction.InputBox("All of the guns in your backpack will be adjusted to the following level:", "Edit All Levels", "", 10, 10);
             if (tempNewLevels != "" && tempNewLevels == "" + Convert.ToInt32(tempNewLevels))
             {
-                foreach (List<int> item in CurrentWSG.WeaponValues)
-                    item[3] = Convert.ToInt32(tempNewLevels) + 2;
+                foreach (var weapon in CurrentWSG.Weapons)
+                    weapon.Values[3] = Convert.ToInt32(tempNewLevels) + 2;
                 WeaponItemGradeSlider.Value = Convert.ToInt32(tempNewLevels) + 2;
             }
         }
@@ -5586,12 +5672,17 @@ namespace WillowTree
                             MessageBox.Show("Invalid file data or unable to read file \"" + file + "\".");
                             continue;
                         }
-                        CurrentWSG.WeaponStrings.Add(wpnstrings);
-                        CurrentWSG.WeaponValues.Add(wpnvalues);
+                        var wp = new WillowSaveGame.Weapon
+                        {
+                            Strings = wpnstrings,
+                            Values = wpnvalues
+                        };
+
                         CurrentWSG.NumberOfWeapons++;
+                        CurrentWSG.Weapons.Add(wp);
 
                         Node TempNode = new Node();
-                        TempNode.Text = GetName(TitlesXml, CurrentWSG.WeaponStrings, CurrentWSG.NumberOfWeapons - 1, 14, "PartName", "Weapon");
+                        TempNode.Text = GetName(TitlesXml, CurrentWSG.Weapons[CurrentWSG.NumberOfWeapons - 1].Strings, "PartName", "Weapon");
                         WeaponTree.Nodes.Add(TempNode);
                         //DoWeaponTree();
                     }
@@ -5628,7 +5719,7 @@ namespace WillowTree
                         CurrentWSG.DLC.ItemEquipped.Add(Convert.ToInt32(InOutPartsBox.Lines[11]));
                         CurrentWSG.DLC.ItemLevel.Add(0);
                         Node TempNode = new Node();
-                        TempNode.Text = GetName(TitlesXml, CurrentWSG.ItemStrings, CurrentWSG.NumberOfItems - 1, 9, "PartName", "Item");
+                        TempNode.Text = GetName(TitlesXml, CurrentWSG.Items[CurrentWSG.NumberOfItems - 1].Strings, "PartName", "Item");
                         ItemTree.Nodes.Add(TempNode);
                         //DoDLCItemTree();
                     }
@@ -5654,13 +5745,17 @@ namespace WillowTree
                             MessageBox.Show("Invalid item data in file \"" + file + "\".  Item not inserted.");
                             continue;
                         }
-   
-                        CurrentWSG.ItemStrings.Add(itemstrings);
-                        CurrentWSG.ItemValues.Add(itemvalues);
+
+                        var item = new WillowSaveGame.Item
+                        {
+                            Strings = itemstrings,
+                            Values = itemvalues
+                        };
+                        CurrentWSG.Items.Add(item);
                         CurrentWSG.NumberOfItems++;
 
                         Node TempNode = new Node();
-                        TempNode.Text = GetName(TitlesXml, CurrentWSG.ItemStrings, CurrentWSG.NumberOfItems - 1, 9, "PartName", "Item");
+                        TempNode.Text = GetName(TitlesXml, item.Strings, "PartName", "Item");
                         ItemTree.Nodes.Add(TempNode);
                     }
                 }
@@ -5674,8 +5769,7 @@ namespace WillowTree
                 int Selected = WeaponTree.SelectedIndex;
                 WeaponTree.DeselectNode(WeaponTree.SelectedNode, new eTreeAction());
                 WeaponTree.Nodes.RemoveAt(Selected);
-                CurrentWSG.WeaponStrings.RemoveAt(Selected);
-                CurrentWSG.WeaponValues.RemoveAt(Selected);
+                CurrentWSG.Weapons.RemoveAt(Selected);
                 CurrentWSG.NumberOfWeapons--;
                 TrySelectedNode(WeaponTree, Selected);
                 //DoWeaponTree();
@@ -5757,8 +5851,8 @@ namespace WillowTree
             string tempNewLevels = Interaction.InputBox("All of the items in your backpack will be adjusted to the following level:", "Edit All Levels", "", 10, 10);
             if (tempNewLevels != "" && tempNewLevels == "" + Convert.ToInt32(tempNewLevels))
             {
-                foreach (List<int> item in CurrentWSG.ItemValues)
-                    item[3] = Convert.ToInt32(tempNewLevels) + 2;
+                foreach (var item in CurrentWSG.Items)
+                    item.Values[3] = Convert.ToInt32(tempNewLevels) + 2;
                 ItemItemGradeSlider.Value = Convert.ToInt32(tempNewLevels) + 2;
             }
         }

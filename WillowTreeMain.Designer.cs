@@ -1075,7 +1075,6 @@
             this.ribbonPanel5.Padding = new System.Windows.Forms.Padding(3, 3, 0, 3);
             this.ribbonPanel5.Size = new System.Drawing.Size(944, 588);
             this.ribbonPanel5.TabIndex = 5;
-            this.ribbonPanel5.Visible = false;
             // 
             // WeaponPanel1
             // 
@@ -1940,10 +1939,10 @@
             this.ribbonControl2.CanCustomize = false;
             this.ribbonControl2.CaptionVisible = true;
             this.ribbonControl2.CategorizeMode = DevComponents.DotNetBar.eCategorizeMode.Categories;
-            this.ribbonControl2.Controls.Add(this.ribbonPanel10);
-            this.ribbonControl2.Controls.Add(this.ribbonPanel11);
             this.ribbonControl2.Controls.Add(this.ribbonPanel5);
             this.ribbonControl2.Controls.Add(this.ribbonPanel1);
+            this.ribbonControl2.Controls.Add(this.ribbonPanel10);
+            this.ribbonControl2.Controls.Add(this.ribbonPanel11);
             this.ribbonControl2.Controls.Add(this.DLCValue1);
             this.ribbonControl2.Controls.Add(this.ribbonPanel3);
             this.ribbonControl2.Controls.Add(this.ribbonPanel7);
@@ -1989,6 +1988,7 @@
             this.ribbonPanel10.Padding = new System.Windows.Forms.Padding(3, 0, 3, 3);
             this.ribbonPanel10.Size = new System.Drawing.Size(944, 588);
             this.ribbonPanel10.TabIndex = 10;
+            this.ribbonPanel10.Visible = false;
             // 
             // UpdateBar
             // 
@@ -2264,7 +2264,7 @@
             this.bar8.Location = new System.Drawing.Point(0, 0);
             this.bar8.Name = "bar8";
             this.bar8.RoundCorners = false;
-            this.bar8.Size = new System.Drawing.Size(273, 31);
+            this.bar8.Size = new System.Drawing.Size(267, 31);
             this.bar8.Stretch = true;
             this.bar8.Style = DevComponents.DotNetBar.eDotNetBarStyle.Office2007;
             this.bar8.TabIndex = 20;
@@ -2775,7 +2775,7 @@
             this.bar4.Location = new System.Drawing.Point(0, 0);
             this.bar4.Name = "bar4";
             this.bar4.RoundCorners = false;
-            this.bar4.Size = new System.Drawing.Size(273, 31);
+            this.bar4.Size = new System.Drawing.Size(267, 31);
             this.bar4.Stretch = true;
             this.bar4.Style = DevComponents.DotNetBar.eDotNetBarStyle.Office2007;
             this.bar4.TabIndex = 20;
@@ -2978,7 +2978,7 @@
             this.bar7.Location = new System.Drawing.Point(0, 0);
             this.bar7.Name = "bar7";
             this.bar7.RoundCorners = false;
-            this.bar7.Size = new System.Drawing.Size(273, 31);
+            this.bar7.Size = new System.Drawing.Size(267, 31);
             this.bar7.Stretch = true;
             this.bar7.Style = DevComponents.DotNetBar.eDotNetBarStyle.Office2007;
             this.bar7.TabIndex = 20;
@@ -3363,7 +3363,7 @@
             this.bar3.Location = new System.Drawing.Point(0, 0);
             this.bar3.Name = "bar3";
             this.bar3.RoundCorners = false;
-            this.bar3.Size = new System.Drawing.Size(273, 31);
+            this.bar3.Size = new System.Drawing.Size(267, 31);
             this.bar3.Stretch = true;
             this.bar3.Style = DevComponents.DotNetBar.eDotNetBarStyle.Office2007;
             this.bar3.TabIndex = 20;
@@ -3628,7 +3628,7 @@
             this.bar9.Location = new System.Drawing.Point(0, 0);
             this.bar9.Name = "bar9";
             this.bar9.RoundCorners = false;
-            this.bar9.Size = new System.Drawing.Size(273, 31);
+            this.bar9.Size = new System.Drawing.Size(267, 31);
             this.bar9.Stretch = true;
             this.bar9.Style = DevComponents.DotNetBar.eDotNetBarStyle.Office2007;
             this.bar9.TabIndex = 20;
@@ -3842,7 +3842,7 @@
             this.bar5.Location = new System.Drawing.Point(0, 0);
             this.bar5.Name = "bar5";
             this.bar5.RoundCorners = false;
-            this.bar5.Size = new System.Drawing.Size(273, 31);
+            this.bar5.Size = new System.Drawing.Size(267, 31);
             this.bar5.Stretch = true;
             this.bar5.Style = DevComponents.DotNetBar.eDotNetBarStyle.Office2007;
             this.bar5.TabIndex = 20;
@@ -4646,7 +4646,6 @@
             // 
             // MainTab
             // 
-            this.MainTab.Checked = true;
             this.MainTab.Name = "MainTab";
             this.MainTab.Panel = this.ribbonPanel10;
             this.MainTab.Text = "Main Page";
@@ -4659,6 +4658,7 @@
             // 
             // WeaponsTab
             // 
+            this.WeaponsTab.Checked = true;
             this.WeaponsTab.Name = "WeaponsTab";
             this.WeaponsTab.Panel = this.ribbonPanel5;
             this.WeaponsTab.Text = "Weapons";

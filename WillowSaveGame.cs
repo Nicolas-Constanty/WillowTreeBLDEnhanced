@@ -128,8 +128,61 @@ namespace WillowTree
             writer.Write(ReadBytes(BitConverter.GetBytes((short)value), sizeof(short), Endian));
         }
 
-        ///<summary>Reads a string in the format used by the WSGs</summary>
-        private static string ReadString(BinaryReader reader, ByteOrder endian)
+        
+    ///<summary>Reads a string in the format used by the WSGs</summary>
+        private static string ReadString(BinaryReader reader, ByteOrder endian, int tempLengthValue)
+    {
+        if (tempLengthValue == 0)
+            return string.Empty;
+
+        string value;
+
+        // Read string data (either single-byte or Unicode).
+        if (tempLengthValue < 0)
+        {
+            // Convert the length value into a unicode byte count.
+            tempLengthValue = -tempLengthValue * 2;
+
+            // Read the byte data (and ensure that the number of bytes
+            // read matches the number of bytes it was supposed to read--
+            // BinaryReader may not return the same number of bytes read).
+            byte[] data = reader.ReadBytes(tempLengthValue);
+            if (data.Length != tempLengthValue)
+                throw new EndOfStreamException();
+
+            // Convert the byte data into a string.
+            value = Encoding.Unicode.GetString(data);
+        }
+        else
+        {
+            // Read the byte data (and ensure that the number of bytes
+            // read matches the number of bytes it was supposed to read--
+            // BinaryReader may not return the same number of bytes read).
+            byte[] data = reader.ReadBytes(tempLengthValue);
+            if (data.Length != tempLengthValue)
+                throw new EndOfStreamException();
+
+            // Convert the byte data into a string.
+            value = SingleByteEncoding.GetString(data);
+        }
+
+        // Look for the null terminator character. If not found, return
+        // the entire string.
+        int nullTerminatorIndex = value.IndexOf('\0');
+        if (nullTerminatorIndex < 0)
+            return value;
+
+        // If the null terminator is the first character in the string,
+        // then return an empty string (small reference optimization).
+        if (nullTerminatorIndex == 0)
+            return string.Empty;
+
+        // Return a portion of the string, excluding the null terminator
+        // and any characters after the null terminator.
+        return value.Substring(0, nullTerminatorIndex);
+    }
+///<summary>Reads a string in the format used by the WSGs</summary>
+private static string ReadString(BinaryReader reader, ByteOrder endian)
         {
             int tempLengthValue = ReadInt32(reader, endian);
             if (tempLengthValue == 0)
@@ -268,17 +321,72 @@ namespace WillowTree
         public string[] AmmoPools;
         public float[] RemainingPools;
         public int[] PoolLevels;
+
+        public class RawDataInfo
+        {
+            public byte[] data = new byte[0];
+            public int nextValue;
+        }
+        //Delegate for read String and Value
+        public delegate List<string> ReadStringsFunction(BinaryReader reader, ByteOrder bo);
+        public delegate List<int> ReadValuesFunction(BinaryReader reader, ByteOrder bo);
+
+        public class Object
+        {
+            public List<string> Strings = new List<string>();
+            public List<int> Values = new List<int>();
+            public byte[] Paddings;
+
+            public ReadStringsFunction readStrings = null;
+            public ReadValuesFunction readValues = ReadObjectValues;
+        }
+        public class Item : Object {
+
+            public Item()
+            {
+                readStrings = ReadItemStrings;
+            }
+        }
+        public class Weapon : Object {
+
+            public Weapon()
+            {
+                readStrings = ReadWeaponStrings;
+            }
+
+            public int Ammo {
+                get { return Values[0]; }
+                set { Values[0] = value; }
+            }
+            public int Quality
+            {
+                get { return Values[1]; }
+                set { Values[1] = value; }
+            }
+            public int EquipedSlot
+            {
+                get { return Values[2]; }
+                set { Values[2] = value; }
+            }
+            public int Level
+            {
+                get { return Values[3]; }
+                set { Values[3] = value; }
+            }
+        }
+
         //Item Arrays
         public int NumberOfItems;
-        public List<List<string>> ItemStrings;
-        public List<List<int>> ItemValues;
+        public List<Item> Items = new List<Item>();
+        public List<Weapon> Weapons = new List<Weapon>();
+
         //Backpack Info
         public int BackpackSize;
         public int EquipSlots;
         //Weapon Arrays
         public int NumberOfWeapons;
-        public List<List<string>> WeaponStrings = new List<List<string>>();
-        public List<List<int>> WeaponValues = new List<List<int>>();
+
+
         //Look, stuff!
         public int ChallengeDataBlockLength;
         public int ChallengeDataBlockId;
@@ -337,15 +445,12 @@ namespace WillowTree
         //public byte[] MiscData;
 
         // Temporary lists used for primary pack data when the inventory is split
-        public List<List<string>> ItemStrings1;
-        public List<List<int>> ItemValues1;
-        public List<List<string>> WeaponStrings1;
-        public List<List<int>> WeaponValues1;
+        public List<Item> Items1 = new List<Item>();
+        public List<Weapon> Weapons1 = new List<Weapon>();
         // Temporary lists used for primary pack data when the inventory is split
-        public List<List<string>> ItemStrings2;
-        public List<List<int>> ItemValues2;
-        public List<List<string>> WeaponStrings2;
-        public List<List<int>> WeaponValues2;
+        public List<Object> Items2 = new List<Object>();
+        public List<Weapon> Weapons2 = new List<Weapon>();
+
 
         public class DLC_Data
         {
@@ -585,16 +690,12 @@ namespace WillowTree
             Vehi2Type = ReadInt32(TestReader, EndianWSG);
             NumberOfPools = ReadInt32(TestReader, EndianWSG);
             Ammo(TestReader, NumberOfPools);
-            ItemStrings = new List<List<string>>();
-            ItemValues = new List<List<int>>();
             NumberOfItems = ReadInt32(TestReader, EndianWSG);
-            Items(TestReader, NumberOfItems);
+            ReadObjects(TestReader, ref Items, NumberOfItems, sizeof(int) * 2, false);
             BackpackSize = ReadInt32(TestReader, EndianWSG);
             EquipSlots = ReadInt32(TestReader, EndianWSG);
-            WeaponStrings = new List<List<string>>();
-            WeaponValues = new List<List<int>>();
             NumberOfWeapons = ReadInt32(TestReader, EndianWSG);
-            Weapons(TestReader, NumberOfWeapons);
+            ReadObjects(TestReader, ref Weapons, NumberOfWeapons, sizeof(int) * 2, false);
 
             ChallengeDataBlockLength = ReadInt32(TestReader, EndianWSG);
             byte[] challengeDataBlock = TestReader.ReadBytes(ChallengeDataBlockLength);
@@ -699,12 +800,18 @@ namespace WillowTree
                             DLC.BankSize = ReadInt32(dlcDataReader, EndianWSG);
                             int bankEntriesCount = ReadInt32(dlcDataReader, EndianWSG);
                             DLC.BankInventory = new List<BankEntry>();
+                            Console.WriteLine(DLC.BankSize);
+                            Console.WriteLine(bankEntriesCount);
                             for (int i = 0; i < bankEntriesCount; i++)
+                            {
+                                Console.WriteLine(i);
                                 DLC.BankInventory.Add(ReadBankEntry(dlcDataReader, EndianWSG));
+                            }
                             break;
                         case DLC_Data.Section2Id:
                             DLC.HasSection2 = true;
                             DLC.DLC_Unknown2 = ReadInt32(dlcDataReader, EndianWSG);
+
                             DLC.DLC_Unknown3 = ReadInt32(dlcDataReader, EndianWSG);
                             DLC.DLC_Unknown4 = ReadInt32(dlcDataReader, EndianWSG);
                             DLC.SkipDLC2Intro = ReadInt32(dlcDataReader, EndianWSG);
@@ -716,11 +823,14 @@ namespace WillowTree
                         case DLC_Data.Section4Id:
                             DLC.HasSection4 = true;
                             DLC.SecondaryPackEnabled = dlcDataReader.ReadByte();
+                            Console.WriteLine(DLC.SecondaryPackEnabled);
                             DLC.NumberOfItems = ReadInt32(dlcDataReader, EndianWSG);
-                            ItemsDLC(dlcDataReader, DLC.NumberOfItems);
+                            Console.WriteLine(DLC.NumberOfItems);
+                            ReadObjects(dlcDataReader, ref Items, DLC.NumberOfItems, sizeof(int), true);
                             NumberOfItems += DLC.NumberOfItems;
                             DLC.NumberOfWeapons = ReadInt32(dlcDataReader, EndianWSG);
-                            WeaponsDLC(dlcDataReader, DLC.NumberOfWeapons);
+                            Console.WriteLine(DLC.NumberOfWeapons);
+                            ReadObjects(dlcDataReader, ref Weapons, DLC.NumberOfWeapons, sizeof(int), true);
                             NumberOfWeapons += DLC.NumberOfWeapons;
                             break;
                         default:
@@ -788,105 +898,121 @@ namespace WillowTree
             RemainingPools = TempRemainingPools;
             PoolLevels = TempPoolLevels;
         }
-        private void Items(BinaryReader reader, int NumOfItems)
-        {
-            for (int Progress = 0; Progress < NumOfItems; Progress++)
-            {
-                List<string> strings = new List<string>();
-                for (int TotalStrings = 0; TotalStrings < 9; TotalStrings++)
-                    strings.Add(ReadString(reader, EndianWSG));
-                ItemStrings.Add(strings);
 
-                List<int> values = new List<int>();
-                Int32 Value1 = ReadInt32(reader, EndianWSG);
-                UInt32 tempLevelQuality = (UInt32)ReadInt32(reader, EndianWSG);
-                Int16 Quality = (Int16)(tempLevelQuality % (UInt32)65536);
-                Int16 Level = (Int16)(tempLevelQuality / (UInt32)65536);
-                Int32 EquippedSlot = ReadInt32(reader, EndianWSG);
-                
-                values.Add(Value1);
-                values.Add(Quality);
-                values.Add(EquippedSlot);
-                values.Add(Level);
-                ItemValues.Add(values);
-                //Padding
-                if (RevisionNumber > 38)
-                    ReadInt64(reader, EndianWSG);
+        private RawDataInfo CheckIntPadding(BinaryReader reader, int paddingSize)
+        {
+            var rd = new RawDataInfo();
+            int count = -paddingSize;
+            //rd.nextValue = 0;
+            Console.WriteLine(paddingSize);
+            rd.data = ReadBytes(reader, paddingSize, EndianWSG);
+            bool findString = false;
+            while (!findString)
+            {
+                var extraPaddingData = ReadBytes(reader, sizeof(int), EndianWSG);
+                bool extraPadding = true;
+                foreach (var pad in extraPaddingData)
+                {
+                    if (pad > 10)
+                    {
+                        extraPadding = false;
+                        reader.BaseStream.Position -= 4;
+                        break;
+                    }
+                }
+                if (extraPadding)
+                    rd.data = rd.data.Concat(extraPaddingData).ToArray();
+                else
+                    findString = true;
+            }
+            return rd;
+        }
+
+        private static List<string> ReadItemStrings(BinaryReader reader, ByteOrder bo)
+        {
+            List<string> strings = new List<string>();
+            for (int TotalStrings = 0; TotalStrings < 9; TotalStrings++)
+                strings.Add(ReadString(reader, bo));
+            foreach (var item in strings)
+            {
+                Console.WriteLine(item);
+            }
+            return strings;
+        }
+
+        private static List<string> ReadWeaponStrings(BinaryReader reader, ByteOrder bo)
+        {
+            List<string> strings = new List<string>();
+            for (int TotalStrings = 0; TotalStrings < 14; TotalStrings++)
+                strings.Add(ReadString(reader, bo));
+            foreach (var item in strings)
+            {
+                Console.WriteLine(item);
+            }
+            return strings;
+        }
+
+        private static List<int> ReadObjectValues(BinaryReader reader, ByteOrder bo)
+        {
+            List<int> values = new List<int>();
+            Int32 Value1 = ReadInt32(reader, bo);
+            UInt32 tempLevelQuality = (UInt32)ReadInt32(reader, bo);
+            Int16 Quality = (Int16)(tempLevelQuality % (UInt32)65536);
+            Int16 Level = (Int16)(tempLevelQuality / (UInt32)65536);
+            Int32 EquippedSlot = ReadInt32(reader, bo);
+
+            values.Add(Value1);
+            values.Add(Quality);
+            values.Add(EquippedSlot);
+            values.Add(Level);
+            return values;
+        }
+
+        private T ReadObject<T>(BinaryReader reader, ref RawDataInfo rd, int paddingSize, bool isDLC) where T : Object, new()
+        {
+            var item = new T();
+            item.Strings = item.readStrings(reader, EndianWSG);
+            item.Values = item.readValues(reader, EndianWSG);
+            if (RevisionNumber > 38)
+            {
+                if ((item.Values[3] == 0) || (item.Strings[0].Substring(0, 3) != "dlc"))
+                {
+                    Console.WriteLine("NOT DLC " + (isDLC ? 0 : paddingSize));
+                    rd = CheckIntPadding(reader, isDLC ? 0 : paddingSize);
+                }
+                else
+                {
+                    paddingSize += sizeof(int);
+                    Console.WriteLine("DLC " + paddingSize);
+                    rd = CheckIntPadding(reader, paddingSize);
+                }
+                item.Paddings = rd.data;
+            }
+            return item;
+        }
+
+        private void ReadObjects<T>(BinaryReader reader, ref List<T> Objects, int groupSize, int paddingSize, bool isDLC) where T : Object, new()
+        {
+            RawDataInfo rd = null;
+            Console.WriteLine(groupSize);
+            for (int Progress = 0; Progress < groupSize; Progress++)
+            {
+                Console.WriteLine(Progress + "/" + groupSize);
+                Objects.Add(ReadObject<T>(reader, ref rd, paddingSize, isDLC));
             }
         }
 
-        private void ItemsDLC(BinaryReader reader, int NumOfItems)
-        {
-            for (int Progress = 0; Progress < NumOfItems; Progress++)
-            {
-                List<string> strings = new List<string>();
-                for (int TotalStrings = 0; TotalStrings < 9; TotalStrings++)
-                    strings.Add(ReadString(reader, EndianWSG));
-                ItemStrings.Add(strings);
+        //private void ReadItem(BinaryReader reader, ref List<Weapon> Objects, int groupSize, int paddingSize)
+        //{
+        //    ReadObjects(reader, ref Objects, groupSize, paddingSize);
+        //    if (groupSize > 0)
+        //        reader.BaseStream.Position -= paddingSize;
+        //}
 
-                List<int> values = new List<int>();
-                Int32 Value1 = ReadInt32(reader, EndianWSG);
-                UInt32 tempLevelQuality = (UInt32)ReadInt32(reader, EndianWSG);
-                Int16 Quality = (Int16)(tempLevelQuality % (UInt32)65536);
-                Int16 Level = (Int16)(tempLevelQuality / (UInt32)65536);
-                Int32 EquippedSlot = ReadInt32(reader, EndianWSG);
-
-                values.Add(Value1);
-                values.Add(Quality);
-                values.Add(EquippedSlot);
-                values.Add(Level);
-                ItemValues.Add(values);
-            }
-        }
-        private void Weapons(BinaryReader reader, int NumOfWeapons)
-        {
-            for (int Progress = 0; Progress < NumOfWeapons; Progress++)
-            {
-                List<string> strings = new List<string>();
-                for (int TotalStrings = 0; TotalStrings < 14; TotalStrings++)
-                    strings.Add(ReadString(reader, EndianWSG));
-                WeaponStrings.Add(strings);
-
-                List<int> values = new List<int>();
-                Int32 AmmoCount = ReadInt32(reader, EndianWSG);
-                UInt32 tempLevelQuality = (UInt32)ReadInt32(reader, EndianWSG);
-                Int16 Level = (Int16)(tempLevelQuality / (UInt32)65536);
-                Int16 Quality = (Int16)(tempLevelQuality % (UInt32)65536);
-                Int32 EquippedSlot = ReadInt32(reader, EndianWSG);
-                values.Add(AmmoCount);
-                values.Add(Quality);
-                values.Add(EquippedSlot);
-                values.Add(Level);
-                WeaponValues.Add(values);
-
-                //Padding
-                if (RevisionNumber > 38)
-                    ReadInt64(reader, EndianWSG);
-            }
-        }
-
-        private void WeaponsDLC(BinaryReader reader, int NumOfWeapons)
-        {
-            for (int Progress = 0; Progress < NumOfWeapons; Progress++)
-            {
-                List<string> strings = new List<string>();
-                for (int TotalStrings = 0; TotalStrings < 14; TotalStrings++)
-                    strings.Add(ReadString(reader, EndianWSG));
-
-                WeaponStrings.Add(strings);
-                List<int> values = new List<int>();
-                Int32 AmmoCount = ReadInt32(reader, EndianWSG);
-                UInt32 tempLevelQuality = (UInt32)ReadInt32(reader, EndianWSG);
-                Int16 Level = (Int16)(tempLevelQuality / (UInt32)65536);
-                Int16 Quality = (Int16)(tempLevelQuality % (UInt32)65536);
-                Int32 EquippedSlot = ReadInt32(reader, EndianWSG);
-                values.Add(AmmoCount);
-                values.Add(Quality);
-                values.Add(EquippedSlot);
-                values.Add(Level);
-                WeaponValues.Add(values);
-            }
-        }
+        //private void ReadWeapons(BinaryReader reader, ref List<Weapon> Objects, int groupSize, int paddingSize)
+        //{
+        //    ReadObjects(reader, ref Objects, groupSize, paddingSize);
+        //}
 
         private void PT1Quests(BinaryReader DJsIO, int NumOfQuests)
         {
@@ -983,6 +1109,43 @@ namespace WillowTree
             EchoStringsPT2 = TempEchoStrings;
             EchoValuesPT2 = TempEchoValues;
         }
+        private void WriteValues(BinaryWriter Out, List<int> values)
+        {
+            Write(Out, values[0], EndianWSG);
+            UInt32 tempLevelQuality = (UInt16)values[1] + (UInt16)values[3] * (UInt32)65536;
+            Write(Out, (Int32)tempLevelQuality, EndianWSG);
+            Write(Out, values[2], EndianWSG);
+        }
+
+        private void WriteStrings(BinaryWriter Out, List<string> strings)
+        {
+            foreach (var s in strings)
+            {
+                Write(Out, s, EndianWSG);
+            }
+        }
+
+        private void WritePaddings(BinaryWriter Out, byte[] data)
+        {
+            Write(Out, data, EndianWSG);
+        }
+
+        private void WriteObject<T>(BinaryWriter Out, T obj) where T : Object
+        {
+            WriteStrings(Out, obj.Strings);
+            WriteValues(Out, obj.Values);
+            if (obj.Paddings != null)
+                WritePaddings(Out, obj.Paddings);
+        }
+
+        private void WriteObjects<T>(BinaryWriter Out, List<T> objs) where T : Object
+        {
+            Write(Out, objs.Count, EndianWSG);
+            foreach (var obj in objs)
+            {
+                WriteObject(Out, obj);
+            }
+        }
 
         ///<summary>Save the current data to a WSG as a byte[]</summary>
         public byte[] SaveWSG()
@@ -1027,44 +1190,14 @@ namespace WillowTree
                 Write(Out, PoolLevels[Progress], EndianWSG);
             }
 
-            Write(Out, ItemStrings1.Count, EndianWSG);
-            for (int Progress = 0; Progress < ItemStrings1.Count; Progress++) //Write Items
-            {
-                for (int TotalStrings = 0; TotalStrings < 9; TotalStrings++)
-                    Write(Out, ItemStrings1[Progress][TotalStrings], EndianWSG);
-
-                Write(Out, ItemValues1[Progress][0], EndianWSG);
-                UInt32 tempLevelQuality = (UInt16)ItemValues1[Progress][1] + (UInt16)ItemValues1[Progress][3] * (UInt32)65536;
-                Write(Out, (Int32)tempLevelQuality, EndianWSG);
-                Write(Out, ItemValues1[Progress][2], EndianWSG);
-                //Padding
-                if (RevisionNumber > 38)
-                {
-                    Write(Out, 0, EndianWSG);
-                    Write(Out, 0, EndianWSG);
-                }
-            }
+            //Write Backpack's items
+            WriteObjects(Out, Items1);
 
             Write(Out, BackpackSize, EndianWSG);
             Write(Out, EquipSlots, EndianWSG);
 
-            Write(Out, WeaponStrings1.Count, EndianWSG);
-            for (int Progress = 0; Progress < WeaponStrings1.Count; Progress++) //Write Weapons
-            {
-                for (int TotalStrings1 = 0; TotalStrings1 < 14; TotalStrings1++)
-                    Write(Out, WeaponStrings1[Progress][TotalStrings1], EndianWSG);
-
-                Write(Out, WeaponValues1[Progress][0], EndianWSG);
-                UInt32 tempLevelQuality = (UInt16)WeaponValues1[Progress][1] + (UInt16)WeaponValues1[Progress][3] * (UInt32)65536;
-                Write(Out, (Int32)tempLevelQuality, EndianWSG);
-                Write(Out, WeaponValues1[Progress][2], EndianWSG);
-                //Padding
-                if (RevisionNumber > 38)
-                {
-                    Write(Out, 0, EndianWSG);
-                    Write(Out, 0, EndianWSG);
-                }
-            }
+            //Write Backpack's weapons
+            WriteObjects(Out, Weapons1);
 
             Int16 count = (Int16)Challenges.Count();
             Write(Out, count * 7 + 10, EndianWSG);
@@ -1210,7 +1343,7 @@ namespace WillowTree
                         Write(memwriter, DLC.BankSize, EndianWSG);
                         Write(memwriter, DLC.BankInventory.Count, EndianWSG);
                         for (int i = 0; i < DLC.BankInventory.Count; i++)
-                            WriteBankEntry(memwriter, DLC.BankInventory[i], EndianWSG);
+                            WriteBankEntry(memwriter, DLC.BankInventory[i], EndianWSG, RevisionNumber);
                         break;
                     case DLC_Data.Section2Id:
                         Write(memwriter, DLC.DLC_Unknown2, EndianWSG);
@@ -1224,29 +1357,9 @@ namespace WillowTree
                     case DLC_Data.Section4Id:
                         memwriter.Write(DLC.SecondaryPackEnabled);
                         // The DLC backpack items
-                        Write(memwriter, ItemStrings2.Count, EndianWSG);
-                        for (int Progress = 0; Progress < ItemStrings2.Count; Progress++) //Write Items
-                        {
-                            for (int TotalStrings = 0; TotalStrings < 9; TotalStrings++)
-                                Write(memwriter, ItemStrings2[Progress][TotalStrings], EndianWSG);
-
-                            Write(memwriter, ItemValues2[Progress][0], EndianWSG);
-                            UInt32 tempLevelQuality = (UInt16)ItemValues2[Progress][1] + (UInt16)ItemValues2[Progress][3] * (UInt32)65536;
-                            Write(memwriter, (Int32)tempLevelQuality, EndianWSG);
-                            Write(memwriter, ItemValues2[Progress][2], EndianWSG);
-                        }
+                        WriteObjects(memwriter, Items2);
                         // The DLC backpack weapons
-                        Write(memwriter, WeaponStrings2.Count, EndianWSG);
-                        for (int Progress = 0; Progress < WeaponStrings2.Count; Progress++) //Write DLC.Weapons
-                        {
-                            for (int TotalStrings = 0; TotalStrings < 14; TotalStrings++)
-                                Write(memwriter, WeaponStrings2[Progress][TotalStrings], EndianWSG);
-
-                            Write(memwriter, WeaponValues2[Progress][0], EndianWSG);
-                            UInt32 tempLevelQuality = (UInt16)WeaponValues2[Progress][1] + (UInt16)WeaponValues2[Progress][3] * (UInt32)65536;
-                            Write(memwriter, (Int32)tempLevelQuality, EndianWSG);
-                            Write(memwriter, WeaponValues2[Progress][2], EndianWSG);
-                        }
+                        WriteObjects(memwriter, Weapons2);
                         break;
                     default:
                         break;
@@ -1272,14 +1385,10 @@ namespace WillowTree
                 Write(Out, Unknown3, EndianWSG);
             }
             // Clear the temporary lists used to split primary and DLC pack data
-            ItemValues1 = null;
-            ItemStrings1 = null;
-            ItemValues2 = null;
-            ItemValues2 = null;
-            WeaponValues1 = null;
-            WeaponStrings1 = null;
-            WeaponValues2 = null;
-            WeaponValues2 = null;
+            Items1 = null;
+            Items2 = null;
+            Weapons1 = null;
+            Weapons2 = null;
             return OutStream.ToArray();
         }
         ///<summary>Split the weapon and item lists into two parts: one for the primary pack and one for DLC backpack</summary>
@@ -1292,55 +1401,27 @@ namespace WillowTree
             if ((DLC.HasSection4 == false) || (DLC.SecondaryPackEnabled == 0))
             {
                 // no secondary pack so put it all in primary pack
-                ItemStrings1 = ItemStrings;
-                ItemValues1 = ItemValues;
-                WeaponStrings1 = WeaponStrings;
-                WeaponValues1 = WeaponValues;
-                ItemStrings2 = new List<List<string>>();
-                ItemValues2 = new List<List<int>>();
-                WeaponStrings2 = new List<List<string>>();
-                WeaponValues2 = new List<List<int>>();
+                foreach (var item in Items)
+                    Items1.Add(item);
+                foreach (var weapon in Weapons)
+                    Weapons1.Add(weapon);
                 return;
             }
-
-            ItemStrings1 = new List<List<string>>();
-            ItemValues1 = new List<List<int>>();
-            ItemStrings2 = new List<List<string>>();
-            ItemValues2 = new List<List<int>>();
-
-            int ItemCount = ItemStrings.Count;
-            for (int i = 0; i < ItemCount; i++)
+            foreach (var item in Items)
             {
-                if ((ItemValues[i][3] == 0) && (ItemStrings[i][0].Substring(0, 3) != "dlc"))
-                {
-                    ItemStrings1.Add(ItemStrings[i]);
-                    ItemValues1.Add(ItemValues[i]);
-                }
+
+                if ((item.Values[3] == 0) && (item.Strings[0].Substring(0, 3) != "dlc"))
+                    Items1.Add(item);
                 else
-                {
-                    ItemStrings2.Add(ItemStrings[i]);
-                    ItemValues2.Add(ItemValues[i]);
-                }
+                    Items2.Add(item);
             }
-
-            WeaponStrings1 = new List<List<string>>();
-            WeaponValues1 = new List<List<int>>();
-            WeaponStrings2 = new List<List<string>>();
-            WeaponValues2 = new List<List<int>>();
-
-            int WeaponCount = WeaponStrings.Count;
-            for (int i = 0; i < WeaponCount; i++)
+            foreach (var weapon in Weapons)
             {
-                if ((WeaponValues[i][3] == 0) && (WeaponStrings[i][0].Substring(0, 3) != "dlc"))
-                {
-                    WeaponStrings1.Add(WeaponStrings[i]);
-                    WeaponValues1.Add(WeaponValues[i]);
-                }
+
+                if ((weapon.Values[3] == 0) && (weapon.Strings[0].Substring(0, 3) != "dlc"))
+                    Weapons1.Add(weapon);
                 else
-                {
-                    WeaponStrings2.Add(WeaponStrings[i]);
-                    WeaponValues2.Add(WeaponValues[i]);
-                }
+                    Weapons2.Add(weapon);
             }
         }
 
@@ -1352,6 +1433,7 @@ namespace WillowTree
             public Byte Equipped;
             public Int16 Quality;
             public Int16 Level;
+            public byte[] padding;
         }
 
         private static string ReadBankString(BinaryReader br, ByteOrder endian)
@@ -1413,12 +1495,15 @@ namespace WillowTree
             }
         }
 
-        private static BankEntry ReadBankEntry(BinaryReader br, ByteOrder endian)
+        private BankEntry ReadBankEntry(BinaryReader br, ByteOrder endian)
         {
             BankEntry entry = new BankEntry();
             int partCount;
 
+            
             entry.TypeId = br.ReadByte();
+
+            Console.WriteLine("Bank entry to be written has Type ID.  TypeId = " + entry.TypeId);
 
             switch (entry.TypeId)
             {
@@ -1482,9 +1567,24 @@ namespace WillowTree
                     entry.AmmoOrQuantity = 0;
                     break;
             }
+            if (RevisionNumber > 38)
+            {
+                List<byte> bytes = new List<byte>();
+                byte value = 0;
+                int count = 0;
+                while (value == 0)
+                {
+                    value = ReadBytes(br, 1, EndianWSG)[0];
+                    if (value == 0)
+                        bytes.Add(value);
+                    count++;
+                }
+                entry.padding = bytes.ToArray();
+                br.BaseStream.Position -= 1;
+            }
             return entry;
         }
-        private static void WriteBankEntry(BinaryWriter bw, BankEntry entry, ByteOrder Endian)
+        private static void WriteBankEntry(BinaryWriter bw, BankEntry entry, ByteOrder Endian, int version)
         {
             if (entry.Parts.Count < 3)
                 throw new FormatException("Bank entry has an invalid part count. Parts.Count = " + entry.Parts.Count);
@@ -1526,6 +1626,8 @@ namespace WillowTree
                 default:
                     throw new FormatException("Bank entry to be written has an invalid Type ID.  TypeId = " + entry.TypeId);
             }
+            if (version > 38)
+                bw.Write(entry.padding);
         }
     }
 }

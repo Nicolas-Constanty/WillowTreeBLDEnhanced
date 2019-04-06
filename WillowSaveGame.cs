@@ -899,23 +899,24 @@ private static string ReadString(BinaryReader reader, ByteOrder endian)
             int count = -paddingSize;
             rd.data = ReadBytes(reader, paddingSize, EndianWSG);
             bool findString = false;
-            while (!findString)
+            while (!findString && rd.data.Length < sizeof(int) * 2)
             {
-                var extraPaddingData = ReadBytes(reader, sizeof(int), EndianWSG);
-                bool extraPadding = true;
-                foreach (var pad in extraPaddingData)
+                var extraPaddingData = ReadInt32(reader, EndianWSG);
+
+                //There is not item smaller or langer than this
+                if (extraPaddingData > 10 && extraPaddingData < 128)
                 {
-                    if (pad > 10)
-                    {
-                        extraPadding = false;
-                        reader.BaseStream.Position -= 4;
-                        break;
-                    }
-                }
-                if (extraPadding)
-                    rd.data = rd.data.Concat(extraPaddingData).ToArray();
-                else
+                    Console.WriteLine("No padding ->" + extraPaddingData);
+                    reader.BaseStream.Position -= 4;
                     findString = true;
+                }
+                else
+                {
+                    Console.WriteLine("Padding ->" + extraPaddingData);
+                    rd.data = rd.data.Concat(
+        ReadBytes(BitConverter.GetBytes(extraPaddingData), sizeof(int), EndianWSG)
+        ).ToArray();
+                }
             }
             return rd;
         }
@@ -925,6 +926,10 @@ private static string ReadString(BinaryReader reader, ByteOrder endian)
             List<string> strings = new List<string>();
             for (int TotalStrings = 0; TotalStrings < 9; TotalStrings++)
                 strings.Add(ReadString(reader, bo));
+            foreach (var item in strings)
+            {
+                Console.WriteLine(item);
+            }
             return strings;
         }
 
@@ -933,6 +938,10 @@ private static string ReadString(BinaryReader reader, ByteOrder endian)
             List<string> strings = new List<string>();
             for (int TotalStrings = 0; TotalStrings < 14; TotalStrings++)
                 strings.Add(ReadString(reader, bo));
+            foreach (var item in strings)
+            {
+                Console.WriteLine(item);
+            }
             return strings;
         }
 
@@ -978,6 +987,7 @@ private static string ReadString(BinaryReader reader, ByteOrder endian)
             RawDataInfo rd = null;
             for (int Progress = 0; Progress < groupSize; Progress++)
             {
+                Console.WriteLine(Progress + "/" + groupSize);
                 Objects.Add(ReadObject<T>(reader, ref rd, paddingSize, isDLC));
             }
         }

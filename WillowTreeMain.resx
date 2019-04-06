@@ -228,16 +228,24 @@
 </value>
   </data>
   <data name="textBoxX1.Text" xml:space="preserve">
-    <value>WillowTree# v2.2.1
+    <value>WillowTree# v2.2.2
 ------------------------
 Version 2.2  revisions performed by matt911, da_fileserver, and XanderChaos
 
 WillowTree# was created by XanderChaos
-WSG format research by matt911, Turk645, and XanderChaos
+WSG format research by matt911, Turk645, XanderChaos, and NicolasConstanty
 X360 class by DJ Shepherd 
-Major revisions by JackSchitt, matt911, and da_fileserver
+Major revisions by JackSchitt, matt911, da_fileserver and NicolasConstanty
 
 WillowTree# is an open source project.  Visit the development site at willowtree.sourceforge.net.
+
+-------------------------
+Update v2.2.2
+- Fixed loading of Borderlands GOTY Enhanced
+- Fixed saving of Borderlands GOTY Enhanced
+- Refacto of Item lists and Weapon lists with two class Item and Weapon (Items = List(Item) and Weapons = List(Weapon)) 
+- Change Unknow2 to Head
+
 -------------------------
 Update v2.2.1
 - Fixed a bug with Xbox saves in 2.2 not working when you used the Save button (Save As worked fine)

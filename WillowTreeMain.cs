@@ -2446,8 +2446,8 @@ namespace WillowTree
                 {
                     var wp = new WillowSaveGame.Weapon
                     {
-                        Strings = CurrentWSG.Items[Selected].Strings,
-                        Values = CurrentWSG.Items[Selected].Values
+                        Strings = CurrentWSG.Weapons[Selected].Strings,
+                        Values = CurrentWSG.Weapons[Selected].Values
                     };
                     
                     CurrentWSG.Weapons[CurrentWSG.NumberOfWeapons].Values[2] = 0;

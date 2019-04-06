@@ -448,7 +448,7 @@ private static string ReadString(BinaryReader reader, ByteOrder endian)
         public List<Item> Items1 = new List<Item>();
         public List<Weapon> Weapons1 = new List<Weapon>();
         // Temporary lists used for primary pack data when the inventory is split
-        public List<Object> Items2 = new List<Object>();
+        public List<Item> Items2 = new List<Item>();
         public List<Weapon> Weapons2 = new List<Weapon>();
 
 
@@ -1384,6 +1384,10 @@ private static string ReadString(BinaryReader reader, ByteOrder endian)
         ///<summary>Split the weapon and item lists into two parts: one for the primary pack and one for DLC backpack</summary>
         public void SplitInventoryIntoPacks()
         {
+            Items1 = new List<Item>();
+            Items2 = new List<Item>();
+            Weapons1 = new List<Weapon>();
+            Weapons2 = new List<Weapon>();
             // Split items and weapons into two lists each so they can be put into the 
             // DLC backpack or regular backpack area as needed.  Any item with a level 
             // override and special dlc items go in the DLC backpack.  All others go 

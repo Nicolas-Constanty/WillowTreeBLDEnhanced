@@ -11,9 +11,9 @@ Support Borderlands GOTY Enhanced Edition for WillowTree from sourceforge [repos
 :warning: Before using WillowTree you should make a copy of all your save! :warning:
 
 
-You can find your save Here :
--[User]\Documents\my games\borderlands\savedata for Borderlands GOTY
--[User]\Documents\my games\Borderlands Game of the Year\Binaries\SaveData
+You can find your save Here
+- [User]\Documents\my games\borderlands\savedata for Borderlands GOTY
+- [User]\Documents\my games\Borderlands Game of the Year\Binaries\SaveData
 
 WillowTree# v2.2.2
 ------------------------

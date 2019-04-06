@@ -6,10 +6,11 @@ PickupMessageWithLevel="You got %s (Level %d)"
 UseFailureLevelMessage="You must be at least level %d to use this item."
 UseFailureConstraintsMessage="You cannot use this item."
 NoManufacturerName="Generic"
-[INV_SkillPoints.Item_SkillPointReward]
 Description="Grants a free Skill Point!"
 NoConstraintText=""
 Suffix=""
+BaseRarity=170
+Presentation="sdu"
 [SupplyDrop_Items.SupplyDrop_Ammo]
 ItemName="MEGA Ammo Pickup"
 NoManufacturerName="Generic"
@@ -34,8 +35,6 @@ PickupMessageWithLevel="You got %s (Level %d)"
 UseFailureCharacterMessage="You must be a %s to use this item."
 UseFailureConstraintsMessage="Health at Maxmium"
 UseFailureLevelMessage="You must be at least level %d to use this item."
-
-[SupplyDrop_Items.SupplyDrop_Health]
 SkillName=""
 SkillDescription=""
 LockedSkillDetailStr="<Locked>"

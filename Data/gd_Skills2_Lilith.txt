@@ -142,7 +142,7 @@ SkillName="Resilience"
 SkillDescription="Increases your resistance to Fire, Shock, Corrosive, and Explosive Damage."
 
 
-[gd_Skills2_Lilith.Elemental.Spark]
+[gd_Skills2_Lilith.Elemental.spark]
 SkillName="Spark"
 SkillDescription="Increases your chance of causing Elemental Effects with Elemental Weapons."
 

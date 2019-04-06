@@ -56,7 +56,7 @@ SkillDescription="Shooting an enemy reduces the Cooldown of your Scorpio Turret.
 [gd_skills2_Roland.Infantry.Scattershot]
 SkillName="Scattershot"
 SkillDescription="Increases shotgun damage and spread."
-"
+
 
 [gd_skills2_Roland.Infantry.Sentry]
 SkillName="Sentry"

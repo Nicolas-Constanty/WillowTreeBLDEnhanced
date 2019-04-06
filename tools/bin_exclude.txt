@@ -1,3 +1,4 @@
 WillowTree#.vshost.exe
 WillowTree#.pdb
 WillowTree#.vshost.exe.manifest
+Aga.Controls.pdb

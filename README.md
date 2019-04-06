@@ -15,25 +15,55 @@ You can find your save Here
 - [User]\Documents\my games\borderlands\savedata -> Borderlands GOTY
 - [User]\Documents\my games\Borderlands Game of the Year\Binaries\SaveData -> Borderlands GOTY Enhanced
 
-WillowTree# v2.2.2
-------------------------
-Version 2.2  revisions performed by matt911, da_fileserver, and XanderChaos
+
+WillowTree# prerelease 2.3 
+-------------------------
+Version 2.3  revisions were performed by matt911 and deathunt.  
 
 WillowTree# was created by XanderChaos
-WSG format research by matt911, Turk645, XanderChaos, and NicolasConstanty
+WSG format research by matt911, Turk645, and XanderChaos
 X360 class by DJ Shepherd 
-Major revisions by JackSchitt, matt911, da_fileserver and NicolasConstanty
+Major revisions by JackSchitt, matt911, and da_fileserver.
+Additional  ideas and code contributions by CK Y and mphjens.
 
-WillowTree# is an open source project.  Visit the development site at [willowtree.sourceforge.net](https://sourceforge.net/projects/willowtree/).
+WillowTree# is an open source project.  Visit the development site at willowtree.sourceforge.net.
 
 -------------------------
-Update v2.2.2
+Update prerelease v2.3.1
 - Fixed loading of Borderlands GOTY Enhanced
 - Fixed saving of Borderlands GOTY Enhanced
 - Refacto of Item lists and Weapon lists with two class Item and Weapon (Items = List(Item) and Weapons = List(Weapon)) 
 - Change Unknow2 to Head
 
 -------------------------
+Update prerelease v2.3.0
+- WillowTree# code is now officially licensed under the GNU General Public License version 3.
+- Complete user interface conversion of WillowTree# to remove the DotNetBar component library.
+- Improved item naming code so the names look more like in the game.
+- New options are available to display the item or weapon level or rarity in the lists.
+- Lists can be colorized according to rarity.  It is disabled by default, but you can enable it in the options menu.
+- Item, weapon, and locker lists can now be sorted  and categorized.  Press F1 to select a sorting scheme and F2 to select the sorting tree depth.
+- Modified error handling to makes it easier to detect and debug problems in some instances.
+- Quality and level now have three options for editing and viewing.  You can use the sliders to edit the level or view and modify the level index (which is the level + 2) directly in a signed integer or signed hexadecimal edit box.
+- The user interface now displays and supports the full 32-bit level for Scorpio weapons
+- The part selector can now track the part list automatically.
+- Part information window added to the item panel.
+- More options are available for importing quests, echoes, and locations.
+- Improved weapon calculations.  The numbers should be more accurate now.  The percentages you see are not the same as the numbers in the game because the numbers in the game are wrong as far as I can tell.
+- Fixes to X360 DLL library prevent hanging when trying to load an Xbox save.
+- Fixes to X360.DLL library prevent the WillowTree icon from becoming a tiger icon in some Xbox 360 savegames.
+- Fixed a bug that would cause WT# to fail to load  if installed in a path that contains a folder named Data.
+- Fixed several bugs relating to inventory being organized by its name in WillowTree#. The most obvious of these was that exporting items to a file would make all items with the same name improperly assume the stats of the first such item.
+- Lots of internal code reorganization in WillowTreeMain.cs and WillowSaveGame.cs that is not visible to the end user.  Many variables and functions have changed names, been removed, or been replaced.
+- Fixed a bug preventing changing the current location in savegames.
+- Updated location data to include more useful descriptions of each location.  Locations in parenthesis have no teleporter and cannot be teleported to.
+- Handling is modified so WT# can properly process any arbitrary number of quest lists and echo lists.
+- All user interface elements should be fixed size and independent of the Windows system settings now so increasing the Windows display DPI setting will no longer disrupt the layout of the WT# window by causing menus to cover over other elements.
+- Multple-selection support has been added to trees so you can copy, delete, or move multiple items at once.  Hold ctrl or shift as you click your mouse as in other Windows applications.
+- The way files are used has been revised.  There is more caching in memory so the data will not be read from disk as often.
+- WT# will now offer to repair some corrupt savegames it could not load otherwise.
+- WT# will now offer to strip raw data from savegames it could not convert to another machine-byte-order otherwise.
+
 Update v2.2.1
 - Fixed a bug with Xbox saves in 2.2 not working when you used the Save button (Save As worked fine)
 - Changed the UI interface for the Xbox ID a bit so it will show you the ID
@@ -93,3 +123,25 @@ Update v1.1.0:
 Update v1.0.1:
 - Fixes a few minor bugs.
 - Added PS3 save support.
+
+## Licence
+WillowTree# is free software: you can redistribute and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+WillowTree# uses a modified version of the X360 library which is 
+subject to the GNU General Public License version 3 along with
+additional terms that are listed in X360.COPYING.TXT.
+
+Source code to both WillowTree# and the modified version of X360.DLL
+are available at http://willowtree.sourceforge.net.
+
+WillowTree# is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with WillowTree# (usually in COPYING.TXT).  If not, see 
+<http://www.gnu.org/licenses/>.

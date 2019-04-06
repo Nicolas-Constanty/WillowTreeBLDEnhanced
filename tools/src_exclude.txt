@@ -1,6 +1,12 @@
 bin\
 obj\
+Aga.Controls\bin\
+Aga.Controls\obj\
 dist\
 WillowTree_TemporaryKey.pfx
 WillowTreeSharp.suo
+WillowTreeSharp.csproj.user
 willowtreesharp.sln.cache
+Aga.Controls.sln.cache
+Aga.Controls.suo
+Aga.Controls.csproj.user

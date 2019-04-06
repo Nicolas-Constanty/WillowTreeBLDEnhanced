@@ -9,7 +9,7 @@
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>WillowTree</RootNamespace>
-    <AssemblyName>WillowTree</AssemblyName>
+    <AssemblyName>WillowTree#</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <IsWebBootstrapper>false</IsWebBootstrapper>
@@ -20,6 +20,8 @@
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
     <OldToolsVersion>3.5</OldToolsVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -49,7 +51,7 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>none</DebugType>
+    <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>
@@ -63,10 +65,8 @@
   <PropertyGroup>
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
   </PropertyGroup>
+  <PropertyGroup />
   <ItemGroup>
-    <Reference Include="DevComponents.DotNetBar2, Version=8.1.0.7, Culture=neutral, PublicKeyToken=5fd520d36328f741, processorArchitecture=MSIL">
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="PresentationCore">
       <RequiredTargetFramework>3.0</RequiredTargetFramework>
@@ -78,6 +78,7 @@
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.Design" />
     <Reference Include="System.Xml.Linq">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
@@ -101,34 +102,160 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppThemes.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Array.cs" />
+    <Compile Include="CustomControls\BasicTheme.cs" />
+    <Compile Include="CustomControls\CCPanel.cs" />
+    <Compile Include="CustomControls\ManagedTheme.cs" />
+    <Compile Include="CustomControls\SlideSelector.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="CustomControls\SlideSelector.Designer.cs">
+      <DependentUpon>SlideSelector.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CustomControls\Theme.cs" />
+    <Compile Include="CustomControls\WTControls.cs" />
+    <Compile Include="CustomControls\CCTabControlDesigner.cs" />
+    <Compile Include="CustomControls\PathTool.cs" />
+    <Compile Include="CustomControls\CCTabControl.cs" />
+    <Compile Include="CustomControls\GroupBox.cs" />
+    <Compile Include="db.cs" />
+    <Compile Include="FrameworkCheck.cs" />
+    <Compile Include="Inventory\InventoryEntry.cs" />
+    <Compile Include="Inventory\InventoryTreeList.cs" />
+    <Compile Include="PluginComponentManager.cs" />
+    <Compile Include="ParseString.cs" />
+    <Compile Include="CustomControls\Slider.cs" />
+    <Compile Include="GlobalSettings.cs" />
+    <Compile Include="Plugins\SamplePlugin.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Plugins\SamplePlugin.Designer.cs">
+      <DependentUpon>SamplePlugin.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Plugins\ucAbout.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Plugins\ucAbout.Designer.cs">
+      <DependentUpon>ucAbout.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Plugins\ucAmmo.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Plugins\ucAmmo.Designer.cs">
+      <DependentUpon>ucAmmo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Plugins\ucDebug.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Plugins\ucDebug.Designer.cs">
+      <DependentUpon>ucDebug.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Plugins\ucEchoes.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Plugins\ucEchoes.Designer.cs">
+      <DependentUpon>ucEchoes.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Plugins\ucGears.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Plugins\ucGears.Designer.cs">
+      <DependentUpon>ucGears.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Plugins\ucGeneral.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Plugins\ucGeneral.Designer.cs">
+      <DependentUpon>ucGeneral.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Plugins\ucLocker.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Plugins\ucLocker.Designer.cs">
+      <DependentUpon>ucLocker.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Plugins\ucQuests.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Plugins\ucQuests.Designer.cs">
+      <DependentUpon>ucQuests.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Plugins\ucSkills.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Plugins\ucSkills.Designer.cs">
+      <DependentUpon>ucSkills.cs</DependentUpon>
+    </Compile>
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="INI.cs" />
+    <Compile Include="Services.cs" />
+    <Compile Include="Settings.cs" />
+    <Compile Include="StringExtensions.cs" />
+    <Compile Include="Util.cs" />
     <Compile Include="WillowSaveGame.cs" />
-    <Compile Include="XBoxIDDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="XBoxIDDialog.Designer.cs">
-      <DependentUpon>XBoxIDDialog.cs</DependentUpon>
-    </Compile>
     <Compile Include="WillowTreeMain.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="WillowTreeMain.Designer.cs">
       <DependentUpon>WillowTreeMain.cs</DependentUpon>
     </Compile>
+    <Compile Include="XBoxIDDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="XBoxIDDialog.Designer.cs">
+      <DependentUpon>XBoxIDDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="XML.cs" />
-    <EmbeddedResource Include="XBoxIDDialog.resx">
-      <DependentUpon>XBoxIDDialog.cs</DependentUpon>
+    <EmbeddedResource Include="AppThemes.resx">
+      <DependentUpon>AppThemes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CustomControls\SlideSelector.resx">
+      <DependentUpon>SlideSelector.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Plugins\SamplePlugin.resx">
+      <DependentUpon>SamplePlugin.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Plugins\ucAbout.resx">
+      <DependentUpon>ucAbout.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Plugins\ucAmmo.resx">
+      <DependentUpon>ucAmmo.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Plugins\ucDebug.resx">
+      <DependentUpon>ucDebug.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Plugins\ucEchoes.resx">
+      <DependentUpon>ucEchoes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Plugins\ucGears.resx">
+      <DependentUpon>ucGears.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Plugins\ucGeneral.resx">
+      <DependentUpon>ucGeneral.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Plugins\ucLocker.resx">
+      <DependentUpon>ucLocker.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Plugins\ucQuests.resx">
+      <DependentUpon>ucQuests.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Plugins\ucSkills.resx">
+      <DependentUpon>ucSkills.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="WillowTreeMain.resx">
       <DependentUpon>WillowTreeMain.cs</DependentUpon>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="XBoxIDDialog.resx">
+      <DependentUpon>XBoxIDDialog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
@@ -178,24 +305,29 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Resources\WT_Background.png" />
     <EmbeddedResource Include="Resources\WT_CON.png" />
     <Resource Include="Resources\background.png" />
     <Resource Include="Resources\bl.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Resources\loading.png" />
-    <Content Include="DLLDependencies\DevComponents.DotNetBar2.dll" />
     <Content Include="DLLDependencies\X360.dll" />
     <Content Include="Resources\bar.png" />
     <Content Include="Resources\WillowTreeOld.ico" />
   </ItemGroup>
   <ItemGroup>
-    <WCFMetadata Include="Service References\" />
+    <ProjectReference Include="Aga.Controls\Aga.Controls.csproj">
+      <Project>{E73BB233-D88B-44A7-A98F-D71EE158381D}</Project>
+      <Name>Aga.Controls</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>xcopy /Y /D /I /E  "$(ProjectDir)Data"  "$(ProjectDir)$(OutDir)Data"
-</PostBuildEvent>
+xcopy /Y /D /I /E  "$(ProjectDir)DLLDependencies" "$(ProjectDir)$(OutDir)"
+xcopy /Y /D "$(ProjectDir)COPYING.TXT" "$(ProjectDir)$(OutDir)"
+xcopy /Y /D "$(ProjectDir)README.TXT" "$(ProjectDir)$(OutDir)"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>

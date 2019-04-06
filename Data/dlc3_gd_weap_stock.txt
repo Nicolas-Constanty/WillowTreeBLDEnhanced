@@ -10,3 +10,4 @@ IdleAccuracyRegenRate=2.000000
 ZoomMinAccuracy=-0.500000
 ZoomMaxAccuracy=-4.000000
 BaseCashValueModifier=50
+Presentation="ar"

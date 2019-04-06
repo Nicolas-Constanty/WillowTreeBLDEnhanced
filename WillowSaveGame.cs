@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Windows.Forms;
 using X360.IO;
 using X360.STFS;
 
@@ -87,7 +86,6 @@ namespace WillowTree
 
             return outBytes;
         }
-
         private static float ReadSingle(BinaryReader reader, ByteOrder Endian)
         {
             return BitConverter.ToSingle(ReadBytes(reader, sizeof(float), Endian), 0);
@@ -117,20 +115,6 @@ namespace WillowTree
             }
             return list;
         }
-
-        private static List<int> ReadListInt32D(BinaryReader reader, ByteOrder Endian)
-        {
-            int count = ReadInt32(reader, Endian);
-            Console.WriteLine(count);
-            List<int> list = new List<int>(count);
-            for (int i = 0; i < count; i++)
-            {
-                int value = ReadInt32(reader, Endian);
-                list.Add(value);
-            }
-            return list;
-        }
-
         private static void Write(BinaryWriter writer, float value, ByteOrder endian)
         {
             writer.Write(BitConverter.ToSingle(ReadBytes(BitConverter.GetBytes(value), sizeof(float), endian), 0));
@@ -195,63 +179,6 @@ namespace WillowTree
 
             // Return a portion of the string, excluding the null terminator
             // and any characters after the null terminator.
-            return value.Substring(0, nullTerminatorIndex);
-        }
-
-        ///<summary>Reads a string in the format used by the WSGs</summary>
-        private static string ReadStringMsg(BinaryReader reader, ByteOrder endian)
-        {
-            int tempLengthValue = ReadInt32(reader, endian);
-
-            //while (tempLengthValue == 0)
-            //    tempLengthValue = ReadInt32(reader, endian);
-
-            Console.WriteLine(tempLengthValue);
-            string value;
-
-            // Read string data (either single-byte or Unicode).
-            if (tempLengthValue < 0)
-            {
-                // Convert the length value into a unicode byte count.
-                tempLengthValue = -tempLengthValue * 2;
-
-                // Read the byte data (and ensure that the number of bytes
-                // read matches the number of bytes it was supposed to read--
-                // BinaryReader may not return the same number of bytes read).
-                byte[] data = reader.ReadBytes(tempLengthValue);
-                if (data.Length != tempLengthValue)
-                    throw new EndOfStreamException();
-
-                // Convert the byte data into a string.
-                value = Encoding.Unicode.GetString(data);
-            }
-            else
-            {
-                // Read the byte data (and ensure that the number of bytes
-                // read matches the number of bytes it was supposed to read--
-                // BinaryReader may not return the same number of bytes read).
-                byte[] data = reader.ReadBytes(tempLengthValue);
-                if (data.Length != tempLengthValue)
-                    throw new EndOfStreamException();
-
-                // Convert the byte data into a string.
-                value = SingleByteEncoding.GetString(data);
-            }
-
-            // Look for the null terminator character. If not found, return
-            // the entire string.
-            int nullTerminatorIndex = value.IndexOf('\0');
-            if (nullTerminatorIndex < 0)
-                return value;
-
-            // If the null terminator is the first character in the string,
-            // then return an empty string (small reference optimization).
-            if (nullTerminatorIndex == 0)
-                return string.Empty;
-
-            // Return a portion of the string, excluding the null terminator
-            // and any characters after the null terminator.
-            Console.WriteLine(value);
             return value.Substring(0, nullTerminatorIndex);
         }
 
@@ -711,39 +638,32 @@ namespace WillowTree
             TotalPT2Quests = ReadInt32(TestReader, EndianWSG);
             PT2Quests(TestReader, TotalPT2Quests); //Saves playthrough 2 quests as arrays of strings and ints (15 values, -1 for none if not used)
             UnknownPT2QuestValue = ReadInt32(TestReader, EndianWSG); //Is either 2 or 0
-            Console.WriteLine(ReadString(TestReader, EndianWSG)); //Z0_Missions.Missions.M_IntroStateSaver
+            ReadString(TestReader, EndianWSG); //Z0_Missions.Missions.M_IntroStateSaver
             ReadInt32(TestReader, EndianWSG); //1
             ReadString(TestReader, EndianWSG); //Z0_Missions.Missions.M_IntroStateSaver
             ReadInt32(TestReader, EndianWSG); //2
             ReadInt32(TestReader, EndianWSG); //0
             ReadInt32(TestReader, EndianWSG); //0
-            Console.WriteLine(ReadInt32(TestReader, EndianWSG)); //0
+            ReadInt32(TestReader, EndianWSG); //0
             TotalPlayTime = ReadInt32(TestReader, EndianWSG);
             LastPlayedDate = ReadString(TestReader, EndianWSG);
             CharacterName = ReadString(TestReader, EndianWSG);
-            Console.WriteLine(CharacterName);
-
             Color1 = ReadInt32(TestReader, EndianWSG); //ABGR Big (X360, PS3), RGBA Little (PC)
             Color2 = ReadInt32(TestReader, EndianWSG); //ABGR Big (X360, PS3), RGBA Little (PC)
             Color3 = ReadInt32(TestReader, EndianWSG); //ABGR Big (X360, PS3), RGBA Little (PC)
-            Console.WriteLine(Color1);
-            Console.WriteLine(Color2);
-            Console.WriteLine(Color3);
-
-
             Head = ReadInt32(TestReader, EndianWSG);
 
-            Unknown2 = ReadBytes(TestReader, 93, EndianWSG);
-            //Console.WriteLine(Head);
-            //Console.WriteLine(ReadBankEntry(TestReader, EndianWSG));
-            //Console.WriteLine(ReadInt16(TestReader, EndianWSG));
-
-            //PromoCodesUsed = ReadListInt32D(TestReader, EndianWSG);
-            //PromoCodesRequiringNotification = ReadListInt32D(TestReader, EndianWSG);
+            if (RevisionNumber > 38)
+            {
+                Unknown2 = ReadBytes(TestReader, 93, EndianWSG);
+            }
+            else
+            {
+                PromoCodesUsed = ReadListInt32(TestReader, EndianWSG);
+                PromoCodesRequiringNotification = ReadListInt32(TestReader, EndianWSG);
+            }
 
             NumberOfEchoLists = ReadInt32(TestReader, EndianWSG);
-
-            Console.WriteLine(NumberOfEchoLists);
 
             EchoIndex0 = ReadInt32(TestReader, EndianWSG);
             NumberOfEchos = ReadInt32(TestReader, EndianWSG);
@@ -817,14 +737,16 @@ namespace WillowTree
                     RemainingBytes -= SectionLength + 8;
                     DLC.DataSections.Add(Section);
                 }
-                var temp = new List<byte>();
-
-                while (!EOF(TestReader))
+                if (RevisionNumber > 38)
                 {
-                    temp.Add(ReadBytes(TestReader, 1, EndianWSG)[0]);
+                    //Padding at the end of file, don't know exactly why
+                    var temp = new List<byte>();
+                    while (!EOF(TestReader))
+                    {
+                        temp.Add(ReadBytes(TestReader, 1, EndianWSG)[0]);
+                    }
+                    Unknown3 = temp.ToArray();
                 }
-
-                Unknown3 = temp.ToArray();
             }
         }
 
@@ -918,14 +840,11 @@ namespace WillowTree
         }
         private void Weapons(BinaryReader reader, int NumOfWeapons)
         {
-            Console.WriteLine("Weapons");
-
             for (int Progress = 0; Progress < NumOfWeapons; Progress++)
             {
                 List<string> strings = new List<string>();
                 for (int TotalStrings = 0; TotalStrings < 14; TotalStrings++)
                     strings.Add(ReadString(reader, EndianWSG));
-
                 WeaponStrings.Add(strings);
 
                 List<int> values = new List<int>();
@@ -955,7 +874,6 @@ namespace WillowTree
                     strings.Add(ReadString(reader, EndianWSG));
 
                 WeaponStrings.Add(strings);
-
                 List<int> values = new List<int>();
                 Int32 AmmoCount = ReadInt32(reader, EndianWSG);
                 UInt32 tempLevelQuality = (UInt32)ReadInt32(reader, EndianWSG);
@@ -1044,7 +962,6 @@ namespace WillowTree
             for (int Progress = 0; Progress < NumOfEchos; Progress++)
             {
                 TempEchoStrings[Progress] = ReadString(DJsIO, EndianWSG);
-                Console.WriteLine(TempEchoStrings[Progress]);
                 for (int TotalValues = 0; TotalValues < 2; TotalValues++)
                     TempEchoValues[Progress, TotalValues] = ReadInt32(DJsIO, EndianWSG);
             }
@@ -1111,7 +1028,6 @@ namespace WillowTree
             }
 
             Write(Out, ItemStrings1.Count, EndianWSG);
-            long padding = 0;
             for (int Progress = 0; Progress < ItemStrings1.Count; Progress++) //Write Items
             {
                 for (int TotalStrings = 0; TotalStrings < 9; TotalStrings++)
@@ -1234,15 +1150,23 @@ namespace WillowTree
             Write(Out, Color2, EndianWSG); //ABGR Big (X360, PS3), RGBA Little (PC)
             Write(Out, Color3, EndianWSG); //ABGR Big (X360, PS3), RGBA Little (PC)
             Write(Out, Head, EndianWSG);
-            Write(Out, Unknown2, EndianWSG);
-            //int NumberOfPromoCodesUsed = PromoCodesUsed.Count;
-            //Write(Out, NumberOfPromoCodesUsed, EndianWSG);
-            //for (int i = 0; i < NumberOfPromoCodesUsed; i++)
-            //    Write(Out, PromoCodesUsed[i], EndianWSG);
-            //int NumberOfPromoCodesRequiringNotification = PromoCodesRequiringNotification.Count;
-            //Write(Out, NumberOfPromoCodesRequiringNotification, EndianWSG);
-            //for (int i = 0; i < NumberOfPromoCodesRequiringNotification; i++)
-            //    Write(Out, PromoCodesRequiringNotification[i], EndianWSG);
+
+            if (RevisionNumber > 38)
+            {
+                Write(Out, Unknown2, EndianWSG);
+            }
+            else
+            {
+                int NumberOfPromoCodesUsed = PromoCodesUsed.Count;
+                Write(Out, NumberOfPromoCodesUsed, EndianWSG);
+                for (int i = 0; i < NumberOfPromoCodesUsed; i++)
+                    Write(Out, PromoCodesUsed[i], EndianWSG);
+                int NumberOfPromoCodesRequiringNotification = PromoCodesRequiringNotification.Count;
+                Write(Out, NumberOfPromoCodesRequiringNotification, EndianWSG);
+                for (int i = 0; i < NumberOfPromoCodesRequiringNotification; i++)
+                    Write(Out, PromoCodesRequiringNotification[i], EndianWSG);
+            }
+
             // Override the number of echo lists if the user edited the echo list and added PT2 echoes
             if (NumberOfEchosPT2 > 0)
                 NumberOfEchoLists = 2;
@@ -1342,8 +1266,11 @@ namespace WillowTree
                 Out.Write(Section.RawData);
                 Section.BaseData = null; // BaseData isn't needed anymore.  Free it.
             }
-            Write(Out, Unknown3, EndianWSG);
-
+            if (RevisionNumber > 38)
+            {
+                //Past end padding
+                Write(Out, Unknown3, EndianWSG);
+            }
             // Clear the temporary lists used to split primary and DLC pack data
             ItemValues1 = null;
             ItemStrings1 = null;

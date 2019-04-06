@@ -1,6 +1,6 @@
 # WillowTreeBLDEnhanced
 
-Support Borderlands GOTY Enhanced Edition for WillowTree from sourceforge [repository](https://sourceforge.net/projects/willowtree/) 
+Support Borderlands GOTY Enhanced Edition for WillowTree from this sourceforge [repository](https://sourceforge.net/projects/willowtree/) 
 
 ## Getting Started
 

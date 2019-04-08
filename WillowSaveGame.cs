@@ -157,7 +157,6 @@ namespace WillowTree
         ///<summary>Reads a string in the format used by the WSGs</summary>
         private static string ReadString(BinaryReader reader, ByteOrder endian)
         {
-            Console.WriteLine("Read from" + reader.BaseStream.Position);
             int tempLengthValue = ReadInt32(reader, endian);
             if (tempLengthValue == 0)
                 return string.Empty;
@@ -235,7 +234,6 @@ namespace WillowTree
             while (true)
             {
                 position = reader.BaseStream.Position;
-                Console.WriteLine(position);
                 int tempLengthValue = ReadInt32(reader, endian);
                 bool isLess = false;
                 string value;
@@ -269,7 +267,6 @@ namespace WillowTree
                 {
                     //Found String put the file cursor just before 
                     reader.BaseStream.Position = position;
-                    Console.WriteLine(position);
                     break;
                 }
             }
@@ -957,6 +954,11 @@ namespace WillowTree
             var item = new T();
             item.Strings = item.readStrings(reader, EndianWSG);
             item.Values = item.readValues(reader, EndianWSG);
+            if (RevisionNumber > 38 && !isDLC)
+            {
+                item.Paddings = GetBytesFromInt(ReadInt32(reader, EndianWSG), EndianWSG);
+                item.Paddings = item.Paddings.Concat(GetBytesFromInt(ReadInt32(reader, EndianWSG), EndianWSG)).ToArray();
+            }
             return item;
         }
 
@@ -966,11 +968,14 @@ namespace WillowTree
             for (int Progress = 0; Progress < groupSize; Progress++)
             {
                 Console.WriteLine(Progress + "/" + groupSize);
-                Objects.Add(ReadObject<T>(reader, ref rd, paddingSize, isDLC));
-                if (RevisionNumber > 38 && Progress < groupSize - 1)
+                var item = ReadObject<T>(reader, ref rd, paddingSize, isDLC);
+                if (Progress < groupSize - 1)
                 {
-                    Objects[Objects.Count -1].Paddings = SearchForString(reader, EndianWSG);
+                    if (item.Paddings == null)
+                        item.Paddings = new byte[0];
+                    item.Paddings = item.Paddings.Concat(SearchForString(reader, EndianWSG)).ToArray();
                 }
+                Objects.Add(item);
             }
         }
 

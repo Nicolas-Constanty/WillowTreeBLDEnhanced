@@ -154,6 +154,11 @@ namespace WillowTree
             return ReadBytes(BitConverter.GetBytes(value), sizeof(int), Endian);
         }
 
+        private static byte[] GetBytesFromInt(uint value, ByteOrder Endian)
+        {
+            return ReadBytes(BitConverter.GetBytes(value), sizeof(int), Endian);
+        }
+
         ///<summary>Reads a string in the format used by the WSGs</summary>
         private static string ReadString(BinaryReader reader, ByteOrder endian)
         {
@@ -242,7 +247,7 @@ namespace WillowTree
                     tempLengthValue = -tempLengthValue * 2;
                     isLess = true;
                 }
-                if (tempLengthValue == 0 || tempLengthValue > 4096)
+                if (tempLengthValue < 5 || tempLengthValue > 4096)
                 {
                     bytes.AddRange(GetBytesFromInt(tempLengthValue, endian));
                     continue;
@@ -265,6 +270,7 @@ namespace WillowTree
                 }
                 else
                 {
+                    Console.WriteLine("Value :" + value);
                     //Found String put the file cursor just before 
                     reader.BaseStream.Position = position;
                     break;
@@ -852,7 +858,6 @@ namespace WillowTree
             if (paddingType == PADDINGTYPE.UNKNOWN)
                 return rd;
             int count = -paddingSize;
-            rd.data = ReadBytes(reader, paddingSize > 4 ? 4 : paddingSize, EndianWSG);
             bool findString = false;
             while (!findString && rd.data.Length < sizeof(int) * 2)
             {
@@ -889,7 +894,7 @@ namespace WillowTree
                         rd.nextValue = BitConverter.ToInt32(ReadBytes(d, sizeof(int), EndianWSG), 0);
                         extraPaddingData = rd.nextValue;
                         //There is not item smaller or langer than this
-                        if (extraPaddingData > 10 && extraPaddingData < 128)
+                        if (extraPaddingData != 0)
                         {
                             Console.WriteLine("No padding ->" + extraPaddingData);
                             reader.BaseStream.Position -= 4;
@@ -954,11 +959,11 @@ namespace WillowTree
             var item = new T();
             item.Strings = item.readStrings(reader, EndianWSG);
             item.Values = item.readValues(reader, EndianWSG);
-            if (RevisionNumber > 38 && !isDLC)
-            {
-                item.Paddings = GetBytesFromInt(ReadInt32(reader, EndianWSG), EndianWSG);
-                item.Paddings = item.Paddings.Concat(GetBytesFromInt(ReadInt32(reader, EndianWSG), EndianWSG)).ToArray();
-            }
+            //if (RevisionNumber > 38 && !isDLC)
+            //{
+            //    item.Paddings = GetBytesFromInt(ReadInt32(reader, EndianWSG), EndianWSG);
+            //    item.Paddings = item.Paddings.Concat(GetBytesFromInt(ReadInt32(reader, EndianWSG), EndianWSG)).ToArray();
+            //}
             return item;
         }
 
@@ -967,13 +972,18 @@ namespace WillowTree
             RawDataInfo rd = null;
             for (int Progress = 0; Progress < groupSize; Progress++)
             {
-                Console.WriteLine(Progress + "/" + groupSize);
+                Console.WriteLine(Progress + "/" + groupSize + "(" + reader.BaseStream.Position + ")");
                 var item = ReadObject<T>(reader, ref rd, paddingSize, isDLC);
+
                 if (Progress < groupSize - 1)
                 {
-                    if (item.Paddings == null)
-                        item.Paddings = new byte[0];
-                    item.Paddings = item.Paddings.Concat(SearchForString(reader, EndianWSG)).ToArray();
+                    Console.WriteLine("=>" + reader.BaseStream.Position);
+                    item.Paddings = SearchForString(reader, EndianWSG).ToArray();
+                    Console.WriteLine("<=" + reader.BaseStream.Position);
+                }
+                else
+                {
+                    item.Paddings = CheckPadding(reader, sizeof(int)).data;
                 }
                 Objects.Add(item);
             }
@@ -1141,7 +1151,9 @@ namespace WillowTree
                             DLC.BankInventory = new List<BankEntry>();
                             Console.WriteLine("==========ENTER BANK===========");
                             for (int i = 0; i < bankEntriesCount; i++)
-                                DLC.BankInventory.Add(CreateBankEntry(dlcDataReader));
+                            {
+                                DLC.BankInventory.Add(CreateBankEntry(dlcDataReader, i == bankEntriesCount - 1 ? true : false));
+                            }
                             Console.WriteLine("==========EXIT BANK===========");
                             break;
                         case DLC_Data.Section2Id: // 0x02151984
@@ -1675,7 +1687,7 @@ namespace WillowTree
                         Write(memwriter, DLC.BankSize, EndianWSG);
                         Write(memwriter, DLC.BankInventory.Count, EndianWSG);
                         for (int i = 0; i < DLC.BankInventory.Count; i++)
-                            WriteBankEntry(memwriter, DLC.BankInventory[i], EndianWSG, RevisionNumber);
+                            Write(memwriter, DLC.BankInventory[i].GetBytes(EndianWSG), EndianWSG);
                         break;
                     case DLC_Data.Section2Id:
                         Write(memwriter, DLC.DLC_Unknown2, EndianWSG);
@@ -1780,27 +1792,29 @@ namespace WillowTree
         //    }
         //}
         private static byte SUBPART = 32;
-        public interface IPart
+        public abstract class IPart
         {
-            byte[] GetBytes(ByteOrder endian);
-            string Init(BinaryReader reader, ByteOrder endian, BankEntry entry);
+            public abstract byte[] GetBytes(ByteOrder endian, BankEntry entry, int index);
+            public abstract string Init(BinaryReader reader, ByteOrder endian, BankEntry entry, bool last);
+            public string Name;
         }
 
         public class Part : IPart {
-            public byte[] Unknown1;
             public byte Mask;
-            public byte[] Unknown2;// Could be size 12 or 8 for Unique part
-            public string Name;
+            public byte[] Padding;// Could be size 12 or 8 for Unique part
             public byte[] ExtraData = null;
 
-            public virtual byte[] GetBytes(ByteOrder endian)
+            public override byte[] GetBytes(ByteOrder endian, BankEntry entry, int index)
             {
                 var bytes = new List<byte>();
 
-                if (Unknown1 != null)
-                    bytes.AddRange(Unknown1);
+                Console.WriteLine(Name);
+                if (Name == "None")
+                {
+                    return new byte[25];
+                }
                 bytes.Add(Mask);
-                bytes.AddRange(Unknown2);
+                bytes.AddRange(Padding);
                 string[] splitPart = Name.Split('.');
                 foreach (var str in splitPart)
                 {
@@ -1810,43 +1824,42 @@ namespace WillowTree
                         bytes.Add(b);
                     }
                 }
+                if (index == 2)
+                {
+                    bytes.AddRange(GetBytesFromInt((UInt16)entry.Quality + (UInt16)entry.Level * (UInt32)65536, endian));
+                }
                 if (ExtraData != null)
                     bytes.AddRange(ExtraData);
                 return bytes.ToArray();
             }
 
-            public virtual string Init(BinaryReader reader, ByteOrder endian, BankEntry entry)
+            public override string Init(BinaryReader reader, ByteOrder endian, BankEntry entry, bool last)
             {
-                var bytes1 = new List<byte>();
                 var bytes2 = new List<byte>();
 
                 var mask = reader.ReadByte();
+
                 if (mask == SUBPART)
                 {
                     Mask = mask;
                 }
                 else if (mask == 0)
                 {
-                    reader.BaseStream.Position -= 1;
-                    bytes1.AddRange(PaddingShort(reader, endian));
-                    Mask = reader.ReadByte();
+                    ReadBytes(reader, 24, endian); //None
+                    Mask = mask;
+                    Name = "None";
+                    return "None";
                 }
                 else
                 {
-                    reader.BaseStream.Position -= 1;
-
-                    UInt32 temp = (UInt32)ReadInt32(reader, endian);
-                    entry.Quality = (Int16)(temp % (UInt32)65536);
-                    entry.Level = (Int16)(temp / (UInt32)65536);
-                    Mask = reader.ReadByte();
+                    Console.WriteLine("Invalid Entry" + mask);
                 }
-                Unknown1 = bytes1.ToArray();
                 bytes2.AddRange(PaddingShort(reader, endian));
-                Unknown2 = bytes2.ToArray();
+                Padding = bytes2.ToArray();
 
-                Name = ReadBankEntryPart(reader, endian, Unknown2.Length);
-
-                return Name.Split('.')[1].Split('_')[0];
+                Name = ReadBankEntryPart(reader, endian, Padding.Length);
+                var category = Name.Split('.')[1].Split('_')[0];
+                return category;
             }
             protected static byte[] PaddingShort(BinaryReader reader, ByteOrder endian)
             {
@@ -1855,6 +1868,7 @@ namespace WillowTree
                 short val = b[0];
                 if (val != 0)
                 {
+                    Console.WriteLine(val);
                     reader.BaseStream.Position -= 1;
                     return null;
                 }
@@ -1872,22 +1886,49 @@ namespace WillowTree
                 }
                 return bytes.ToArray();
             }
+            protected static byte[] SearchNextItem(BinaryReader reader, ByteOrder endian)
+            {
+                var bytes = new List<byte>();
+                var b = ReadBytes(reader, 1, endian);
+                short val = b[0];
+
+                bytes.AddRange(b);
+                //Looking for next byte != 0
+                while (val != SUBPART)
+                {
+                    b = ReadBytes(reader, 1, endian);
+                    val = b[0];
+                    if (val != SUBPART)
+                        bytes.AddRange(b);
+                    else
+                    {
+                        bytes.RemoveAt(bytes.Count - 1);
+                        reader.BaseStream.Position -= 2;
+                    }
+                }
+                return bytes.ToArray();
+            }
         }
         public class WeaponPart : Part
         {
-            public override string Init(BinaryReader reader, ByteOrder endian, BankEntry entry)
+            public override string Init(BinaryReader reader, ByteOrder endian, BankEntry entry, bool last)
             {
-                var category = base.Init(reader, endian, entry);
+                var category = base.Init(reader, endian, entry, last);
                 switch (category)
                 {
                     case "Manufacturers":
-                        ExtraData = ReadBytes(reader, 4, endian); //Manufacturers ID (int)
+                        UInt32 temp = (UInt32)ReadInt32(reader, endian);
+                        entry.Quality = (Int16)(temp % (UInt32)65536);
+                        entry.Level = (Int16)(temp / (UInt32)65536);
                         break;
                     case "Title":
                         ExtraData = ReadBytes(reader, 13, endian);//??
-                        var padding = PaddingShort(reader, endian);
+                        if (last)
+                            break;
+                        var padding = SearchNextItem(reader, endian);
                         if (padding != null)
                         {
+                            Console.WriteLine("Extra padding needed => " + padding.Count());
                             if (ExtraData == null)
                                 ExtraData = padding;
                             else
@@ -1904,16 +1945,24 @@ namespace WillowTree
 
         public class ItemPart : Part
         {
-            public override string Init(BinaryReader reader, ByteOrder endian, BankEntry entry)
+            public override string Init(BinaryReader reader, ByteOrder endian, BankEntry entry, bool last)
             {
-                var category = base.Init(reader, endian, entry);
+                var category = base.Init(reader, endian, entry, last);
                 switch (category)
                 {
+                    case "Manufacturers":
+                        UInt32 temp = (UInt32)ReadInt32(reader, endian);
+                        entry.Quality = (Int16)(temp % (UInt32)65536);
+                        entry.Level = (Int16)(temp / (UInt32)65536);
+                        break;
                     case "Title":
                         ExtraData = ReadBytes(reader, 10, endian);//Unknown
-                        var padding = PaddingShort(reader, endian);
+                        if (last)
+                            break;
+                        var padding = SearchNextItem(reader, endian);
                         if (padding != null)
                         {
+                            Console.WriteLine("Extra padding needed => " + padding.Count());
                             if (ExtraData == null)
                                 ExtraData = padding;
                             else
@@ -1938,7 +1987,7 @@ namespace WillowTree
         public sealed class BankEntry
         {
             public Byte TypeId;
-            public List<Part> Parts = new List<Part>();
+            public List<IPart> Parts = new List<IPart>();
             public Int32 Quantity; //AmmoOrQuantity
             public Byte Equipped;
             public Int16 Quality;
@@ -1951,6 +2000,19 @@ namespace WillowTree
                 {
                     Console.WriteLine(part.Name);
                 }
+            }
+
+            public byte[] GetBytes(ByteOrder endian)
+            {
+                var bytes = new List<byte>();
+
+                bytes.Add(TypeId);
+                for (int i = 0; i < Parts.Count; i++)
+                {
+                    bytes.AddRange(Parts[i].GetBytes(endian, this, i));
+                }
+
+                return bytes.ToArray();
             }
         }
 
@@ -1990,7 +2052,7 @@ namespace WillowTree
             "Title"
         };
 
-        private void BankEntryParseItem(BinaryReader reader, out BankEntry entry)
+        private void BankEntryParseItem(BinaryReader reader, out BankEntry entry, bool last)
         {
             Console.WriteLine("Item");
             entry = new BankEntry();
@@ -2009,25 +2071,26 @@ namespace WillowTree
             while (category != "Title")
             {
                 Part part = new ItemPart();
-                category = part.Init(reader, EndianWSG, entry);
+                category = part.Init(reader, EndianWSG, entry, last);
                 entry.Parts.Add(part);
+                Console.WriteLine(part.Name);
             }
 
-            for (int i = 0; i < 9; i++)
-            {
-                category = entry.Parts[i].Name.Split('.')[1].Split('_')[0];
-                if (checkItemIntegrity[i] != category && i != 1)
-                {
-                    Console.WriteLine(checkItemIntegrity[i] + "/" + category);
-                    var part = new ItemPart
-                    {
-                        Name = "None"
-                    };
-                    entry.Parts.Insert(i, part);
-                }
-            }
+            //for (int i = 0; i < 9; i++)
+            //{
+            //    category = entry.Parts[i].Name.Split('.')[1].Split('_')[0];
+            //    if (checkItemIntegrity[i] != category && i != 1)
+            //    {
+            //        Console.WriteLine(checkItemIntegrity[i] + "/" + category);
+            //        var part = new ItemPart
+            //        {
+            //            Name = "None"
+            //        };
+            //        entry.Parts.Insert(i, part);
+            //    }
+            //}
 
-            entry.PrintParts();
+            //entry.PrintParts();
         }
         private static string[] checkWeaponIntegrity = new string[14]
         {
@@ -2046,7 +2109,7 @@ namespace WillowTree
             "prefix",
             "title"
         };
-        private void BankEntryParseWeapon(BinaryReader reader, out BankEntry entry)
+        private void BankEntryParseWeapon(BinaryReader reader, out BankEntry entry, bool last)
         {
             Console.WriteLine("Weapon");
             entry = new BankEntry();
@@ -2054,25 +2117,25 @@ namespace WillowTree
             while (category != "Title")
             {
                 Part part = new WeaponPart();
-                category = part.Init(reader, EndianWSG, entry);
+                category = part.Init(reader, EndianWSG, entry, last);
                 entry.Parts.Add(part);
             }
 
-            for (int i = 0; i < 14; i++)
-            {
-                category = entry.Parts[i].Name.ToLower();
-                if (!category.Contains(checkWeaponIntegrity[i]))
-                {
-                    Console.WriteLine(checkWeaponIntegrity[i] + "/" + category);
-                    var part = new WeaponPart
-                    {
-                        Name = "None"
-                    };
-                    entry.Parts.Insert(i, part);
-                }
-            }
+            //for (int i = 0; i < 14; i++)
+            //{
+            //    category = entry.Parts[i].Name.ToLower();
+            //    if (!category.Contains(checkWeaponIntegrity[i]))
+            //    {
+            //        Console.WriteLine(checkWeaponIntegrity[i] + "/" + category);
+            //        var part = new WeaponPart
+            //        {
+            //            Name = "None"
+            //        };
+            //        entry.Parts.Insert(i, part);
+            //    }
+            //}
             
-            entry.PrintParts();
+            //entry.PrintParts();
         }
 
         private BankEntryType CheckEntryType(BinaryReader reader)
@@ -2090,7 +2153,7 @@ namespace WillowTree
             }
         }
 
-        private BankEntry CreateBankEntry(BinaryReader reader)
+        private BankEntry CreateBankEntry(BinaryReader reader, bool last)
         {
             //Check entry type
             var entryType = CheckEntryType(reader);
@@ -2102,11 +2165,11 @@ namespace WillowTree
             switch (entryType)
             {
                 case BankEntryType.Item:
-                    BankEntryParseItem(reader, out entry);
+                    BankEntryParseItem(reader, out entry, last);
                     entry.TypeId = 2;
                     return entry;
                 case BankEntryType.Weapon:
-                    BankEntryParseWeapon(reader, out entry);
+                    BankEntryParseWeapon(reader, out entry, last);
                     entry.TypeId = 1;
                     return entry;
                 case BankEntryType.Unknown:
@@ -2313,7 +2376,10 @@ namespace WillowTree
                     throw new FormatException("Bank entry to be written has an invalid Type ID.  TypeId = " + entry.TypeId);
             }
             if (version > 38)
-                bw.Write(entry.padding);
+            {
+                //if (entry.padding)
+                //    bw.Write(entry.padding);
+            }
         }
     }
 }

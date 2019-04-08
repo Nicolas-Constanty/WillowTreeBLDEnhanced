@@ -440,7 +440,7 @@ namespace WillowTree.Inventory
                 parts.AddRange(itemParts);
             }
             
-            this.Add(new InventoryEntry(invType, parts, values));
+            this.Add(new InventoryEntry(invType, parts, values, new byte[0]));
         }
 
         // 1 references to unused method

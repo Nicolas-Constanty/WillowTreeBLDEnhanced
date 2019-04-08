@@ -144,19 +144,19 @@ namespace WillowTree
             }
         }
 
-        private void ConvertListForEditing(InventoryList itmList, ref List<List<string>> itmStrings, ref List<List<int>> itmValues)
-        {
-            // Populate itmList with items created from the WillowSaveGame data lists
-            itmList.ClearSilent();
-            for (int i = 0; i < itmStrings.Count; i++)
-                itmList.AddSilent(new InventoryEntry(itmList.invType, itmStrings[i], itmValues[i]));
-            itmList.OnListReload();
+        //private void ConvertListForEditing(InventoryList itmList, ref List<List<string>> itmStrings, ref List<List<int>> itmValues)
+        //{
+        //    // Populate itmList with items created from the WillowSaveGame data lists
+        //    itmList.ClearSilent();
+        //    for (int i = 0; i < itmStrings.Count; i++)
+        //        itmList.AddSilent(new InventoryEntry(itmList.invType, itmStrings[i], itmValues[i]));
+        //    itmList.OnListReload();
 
-            // Release the WillowSaveGame data lists now that the data is converted
-            // to the format that the WillowTree UI uses.
-            itmStrings = null;
-            itmValues = null;
-        }
+        //    // Release the WillowSaveGame data lists now that the data is converted
+        //    // to the format that the WillowTree UI uses.
+        //    itmStrings = null;
+        //    itmValues = null;
+        //}
         private void ConvertListForEditing(InventoryList itmList, ref List<WillowSaveGame.BankEntry> itmBank)
         {
             // Populate itmList with items created from the WillowSaveGame data lists
@@ -167,15 +167,18 @@ namespace WillowTree
 
                 // Store a reference to the parts list
                 List<string> parts = new List<string>();
-
+                List<WillowSaveGame.IPart> partsItem = new List<WillowSaveGame.IPart>();
                 int itmType = itmBank[i].TypeId - 1;
 
                 foreach (var part in itmBank[i].Parts)
+                {
                     parts.Add(part.Name);
+                    partsItem.Add(part);
+                }
 
                 //// Detach the parts list from the bank entry.
                 //itmBank[i].Parts = null;
- 
+
                 // Items have a different part order in the bank and in the backpack
                 // Part                Index      Index
                 //                   Inventory    Bank
@@ -193,23 +196,32 @@ namespace WillowTree
 
                 // Convert all items into the backpack part order.  Weapons use
                 // the same format for both backpack and bank.
-      
+
                 if (itmType == InventoryType.Item)
                 {
                     string temp = parts[1];
+                    WillowSaveGame.IPart temp1 = partsItem[1];
                     parts[1] = parts[0];
+                    partsItem[1] = partsItem[0];
                     parts[0] = temp;
+                    partsItem[0] = temp1;
                     temp = parts[2];
+                    temp1 = partsItem[2];
                     parts[2] = parts[3];
+                    partsItem[2] = partsItem[3];
                     parts[3] = parts[4];
+                    partsItem[3] = partsItem[4];
                     parts[4] = parts[5];
+                    partsItem[4] = partsItem[5];
                     parts[5] = parts[6];
+                    partsItem[5] = partsItem[6];
                     parts[6] = temp;
+                    partsItem[6] = temp1;
                 }
                 
                 
                 // Create an inventory entry with the re-ordered parts list and add it
-                itmList.AddSilent(new InventoryEntry((byte)(itmBank[i].TypeId - 1), parts, itmBankValues));
+                itmList.AddSilent(new InventoryEntry((byte)(itmBank[i].TypeId - 1), parts, itmBankValues, partsItem));
                 //Item/Weapon in bank have their type increase by 1, we reduce TypeId by 1 to manipulate them like other list
             }
             itmList.OnListReload();
@@ -288,33 +300,37 @@ namespace WillowTree
                 if (item.Type == InventoryType.Item)
                 {
                     // Items must have their parts reordered because they are different in the bank.
-                    List<string> oldParts = new List<string>();
-                    foreach (var part in item.Parts)
+                    List<WillowSaveGame.IPart> oldPartsItem = new List<WillowSaveGame.IPart>();
+                    for (int i = 0; i < item.Parts.Count; i++)
                     {
-                        oldParts.Add(part);
+                        var itmBk = item.PartsBank[i];
+                        itmBk.Name = item.Parts[i];
+                        oldPartsItem.Add(itmBk);
                     }
-                    itm.Parts[0].Name = oldParts[1];
-                    itm.Parts[1].Name = oldParts[0];
-                    itm.Parts[2].Name = oldParts[6];
-                    itm.Parts[3].Name = oldParts[2];
-                    itm.Parts[4].Name = oldParts[3];
-                    itm.Parts[5].Name = oldParts[4];
-                    itm.Parts[6].Name = oldParts[5];
-                    itm.Parts[7].Name = oldParts[7];
-                    itm.Parts[8].Name = oldParts[8];    
+
+                    itm.Parts.Add(oldPartsItem[1]);
+                    itm.Parts.Add(oldPartsItem[0]);
+                    itm.Parts.Add(oldPartsItem[6]);
+                    itm.Parts.Add(oldPartsItem[2]);
+                    itm.Parts.Add(oldPartsItem[3]);
+                    itm.Parts.Add(oldPartsItem[4]);
+                    itm.Parts.Add(oldPartsItem[5]);
+                    itm.Parts.Add(oldPartsItem[7]);
+                    itm.Parts.Add(oldPartsItem[8]);
                 }
                 else
                 {
-                    itm.Parts = new List<WillowSaveGame.Part>();
+                    itm.Parts = new List<WillowSaveGame.IPart>();
 
                     for (int i = 0; i < item.Parts.Count; i++)
                     {
-                        WillowSaveGame.Part p = new WillowSaveGame.Part();
-                        p.Name = item.Parts[i];
-                        itm.Parts.Add(p);
+                        var itmBk = item.PartsBank[i];
+                        itmBk.Name = item.Parts[i];
+                        itm.Parts.Add(itmBk);
                     }
                 }
 
+                //itm.Parts.RemoveAll((i) => { return i.Name == "None"; });
                 //Item/Weapon in bank have their type increase by 1, we  increase TypeId by 1 to restore them to their natural value
                 itm.TypeId = (byte)(item.Type + 1);
 

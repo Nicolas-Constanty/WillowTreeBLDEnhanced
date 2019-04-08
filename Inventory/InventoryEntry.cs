@@ -51,7 +51,9 @@ namespace WillowTree.Inventory
         public int QualityIndex;
         public int EquippedSlot;
         public int LevelIndex;
+
         public byte[] padding;//Unknown datas
+        public List<WillowSaveGame.IPart> PartsBank;
 
         // User data.  These are user defined fields that are saved in the
         // locker for user notes.  They are not necessary to define an item
@@ -160,12 +162,13 @@ namespace WillowTree.Inventory
             return false;
         }
 
-        public InventoryEntry(byte inType, List<string> inParts, List<int> inValues)
+        public InventoryEntry(byte inType, List<string> inParts, List<int> inValues, List<WillowSaveGame.IPart> parts)
         {
             // This makes a shallow copy of elements.
             // Parts and Values still link to the input structures
             this.Type = inType;
             this.Parts = inParts;
+            this.PartsBank = parts;
 
             ConvertValues(inValues, inParts[0], out this.UsesBigLevel, out this.Quantity, out this.QualityIndex, out this.EquippedSlot, out this.LevelIndex);
 
@@ -560,7 +563,7 @@ namespace WillowTree.Inventory
                 return null;
             }
 
-            return new InventoryEntry(inType, parts, values);
+            return new InventoryEntry(inType, parts, values, new byte[0]);
         }
         
         // TODO: This doesn't indent properly in most cases.  It should have the 

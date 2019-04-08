@@ -270,7 +270,6 @@ namespace WillowTree
                 }
                 else
                 {
-                    Console.WriteLine("Value :" + value);
                     //Found String put the file cursor just before 
                     reader.BaseStream.Position = position;
                     break;
@@ -852,7 +851,6 @@ namespace WillowTree
 
         private RawDataInfo CheckPadding(BinaryReader reader, int paddingSize)
         {
-            Console.WriteLine(paddingSize);
             var paddingType = GetPaddingTypeFromSize(paddingSize); 
             var rd = new RawDataInfo();
             if (paddingType == PADDINGTYPE.UNKNOWN)
@@ -867,42 +865,35 @@ namespace WillowTree
                 switch (paddingType)
                 {
                     case PADDINGTYPE.BYTE:
-                        Console.WriteLine("BYTE");
                         //Looking for non null byte
                         extraPaddingData = d[0];
                         rd.nextValue = d[0];
                         if (extraPaddingData != 0)
                         {
-                            Console.WriteLine("No padding ->" + extraPaddingData);
                             reader.BaseStream.Position -= paddingSize;
                             findString = true;
                         }
                         else
                         {
-                            Console.WriteLine("Padding ->" + extraPaddingData);
                             rd.data = rd.data.Concat(d).ToArray();
                         }
                         break;
                     case PADDINGTYPE.INT16:
-                        Console.WriteLine("INT16");
                         extraPaddingData = BitConverter.ToInt16(ReadBytes(d, sizeof(Int16), EndianWSG), 0);
                         break;
                     case PADDINGTYPE.INT32:
                     case PADDINGTYPE.LONG:
-                        Console.WriteLine("INT32");
                         //Looking for next string
                         rd.nextValue = BitConverter.ToInt32(ReadBytes(d, sizeof(int), EndianWSG), 0);
                         extraPaddingData = rd.nextValue;
                         //There is not item smaller or langer than this
                         if (extraPaddingData != 0)
                         {
-                            Console.WriteLine("No padding ->" + extraPaddingData);
                             reader.BaseStream.Position -= 4;
                             findString = true;
                         }
                         else
                         {
-                            Console.WriteLine("Padding ->" + extraPaddingData);
                             rd.data = rd.data.Concat(d).ToArray();
                         }
                         break;
@@ -919,10 +910,6 @@ namespace WillowTree
             List<string> strings = new List<string>();
             for (int TotalStrings = 0; TotalStrings < 9; TotalStrings++)
                 strings.Add(ReadString(reader, bo));
-            foreach (var item in strings)
-            {
-                Console.WriteLine(item);
-            }
             return strings;
         }
 
@@ -931,10 +918,6 @@ namespace WillowTree
             List<string> strings = new List<string>();
             for (int TotalStrings = 0; TotalStrings < 14; TotalStrings++)
                 strings.Add(ReadString(reader, bo));
-            foreach (var item in strings)
-            {
-                Console.WriteLine(item);
-            }
             return strings;
         }
 
@@ -959,11 +942,6 @@ namespace WillowTree
             var item = new T();
             item.Strings = item.readStrings(reader, EndianWSG);
             item.Values = item.readValues(reader, EndianWSG);
-            //if (RevisionNumber > 38 && !isDLC)
-            //{
-            //    item.Paddings = GetBytesFromInt(ReadInt32(reader, EndianWSG), EndianWSG);
-            //    item.Paddings = item.Paddings.Concat(GetBytesFromInt(ReadInt32(reader, EndianWSG), EndianWSG)).ToArray();
-            //}
             return item;
         }
 
@@ -972,14 +950,11 @@ namespace WillowTree
             RawDataInfo rd = null;
             for (int Progress = 0; Progress < groupSize; Progress++)
             {
-                Console.WriteLine(Progress + "/" + groupSize + "(" + reader.BaseStream.Position + ")");
                 var item = ReadObject<T>(reader, ref rd, paddingSize, isDLC);
 
                 if (Progress < groupSize - 1)
                 {
-                    Console.WriteLine("=>" + reader.BaseStream.Position);
                     item.Paddings = SearchForString(reader, EndianWSG).ToArray();
-                    Console.WriteLine("<=" + reader.BaseStream.Position);
                 }
                 else
                 {
@@ -1149,12 +1124,10 @@ namespace WillowTree
                             DLC.BankSize = ReadInt32(dlcDataReader, EndianWSG);
                             int bankEntriesCount = ReadInt32(dlcDataReader, EndianWSG);
                             DLC.BankInventory = new List<BankEntry>();
-                            Console.WriteLine("==========ENTER BANK===========");
                             for (int i = 0; i < bankEntriesCount; i++)
                             {
                                 DLC.BankInventory.Add(CreateBankEntry(dlcDataReader, i == bankEntriesCount - 1 ? true : false));
                             }
-                            Console.WriteLine("==========EXIT BANK===========");
                             break;
                         case DLC_Data.Section2Id: // 0x02151984
                             DLC.HasSection2 = true;
@@ -1807,8 +1780,7 @@ namespace WillowTree
             public override byte[] GetBytes(ByteOrder endian, BankEntry entry, int index)
             {
                 var bytes = new List<byte>();
-
-                Console.WriteLine(Name);
+                
                 if (Name == "None")
                 {
                     return new byte[25];
@@ -1868,7 +1840,6 @@ namespace WillowTree
                 short val = b[0];
                 if (val != 0)
                 {
-                    Console.WriteLine(val);
                     reader.BaseStream.Position -= 1;
                     return null;
                 }
@@ -1928,7 +1899,6 @@ namespace WillowTree
                         var padding = SearchNextItem(reader, endian);
                         if (padding != null)
                         {
-                            Console.WriteLine("Extra padding needed => " + padding.Count());
                             if (ExtraData == null)
                                 ExtraData = padding;
                             else
@@ -1962,7 +1932,6 @@ namespace WillowTree
                         var padding = SearchNextItem(reader, endian);
                         if (padding != null)
                         {
-                            Console.WriteLine("Extra padding needed => " + padding.Count());
                             if (ExtraData == null)
                                 ExtraData = padding;
                             else
@@ -2054,7 +2023,6 @@ namespace WillowTree
 
         private void BankEntryParseItem(BinaryReader reader, out BankEntry entry, bool last)
         {
-            Console.WriteLine("Item");
             entry = new BankEntry();
             //Read PartName
             //
@@ -2073,7 +2041,6 @@ namespace WillowTree
                 Part part = new ItemPart();
                 category = part.Init(reader, EndianWSG, entry, last);
                 entry.Parts.Add(part);
-                Console.WriteLine(part.Name);
             }
 
             //for (int i = 0; i < 9; i++)
@@ -2111,7 +2078,6 @@ namespace WillowTree
         };
         private void BankEntryParseWeapon(BinaryReader reader, out BankEntry entry, bool last)
         {
-            Console.WriteLine("Weapon");
             entry = new BankEntry();
             var category = "";
             while (category != "Title")
@@ -2148,7 +2114,6 @@ namespace WillowTree
                 case 2:
                     return BankEntryType.Item;
                 default:
-                    Console.WriteLine("Unknown type->" + t);
                     return BankEntryType.Unknown;
             }
         }

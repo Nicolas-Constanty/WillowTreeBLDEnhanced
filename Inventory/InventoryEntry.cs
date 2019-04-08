@@ -189,7 +189,6 @@ namespace WillowTree.Inventory
 
             if (padding != null)
             {
-                Console.WriteLine("Copy padding array->" + padding.Length);
                 this.padding = new byte[padding.Length];
                 Array.Copy(padding, this.padding, padding.Length);
             }
@@ -307,7 +306,7 @@ namespace WillowTree.Inventory
             Model += Parse.AsInt(db.GetPartAttribute(this.Parts[3], "PartNumberAddend"), 0);           // Number from mag
 
             this.Rarity = Parse.AsInt(db.GetPartAttribute(this.Parts[1], "BaseRarity"), 0);
-            for (int i = 2; i < 9; i++)
+            for (int i = 2; i < this.Parts.Count; i++)
             {
                 int partrarity = db.GetPartRarity(this.Parts[i]);
                 //                    if ((partrarity == 50) && (i < 10) && (Parts[i].StartsWith("dlc3") == false))

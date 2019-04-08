@@ -166,10 +166,15 @@ namespace WillowTree
                 List<int> itmBankValues = new List<int>() { itmBank[i].Quantity, itmBank[i].Quality, itmBank[i].Equipped, itmBank[i].Level };
 
                 // Store a reference to the parts list
-                List<string> parts = itmBank[i].Parts;
+                List<string> parts = new List<string>();
 
-                // Detach the parts list from the bank entry.
-                itmBank[i].Parts = null;
+                int itmType = itmBank[i].TypeId - 1;
+
+                foreach (var part in itmBank[i].Parts)
+                    parts.Add(part.Name);
+
+                //// Detach the parts list from the bank entry.
+                //itmBank[i].Parts = null;
  
                 // Items have a different part order in the bank and in the backpack
                 // Part                Index      Index
@@ -184,7 +189,7 @@ namespace WillowTree
                 // Prefix                7          7
                 // Title                 8          8
 
-                int itmType = itmBank[i].TypeId - 1;
+
 
                 // Convert all items into the backpack part order.  Weapons use
                 // the same format for both backpack and bank.
@@ -283,12 +288,32 @@ namespace WillowTree
                 if (item.Type == InventoryType.Item)
                 {
                     // Items must have their parts reordered because they are different in the bank.
-                    List<string> oldParts = item.Parts;
-                    itm.Parts = new List<string>() { oldParts[1], oldParts[0], oldParts[6], oldParts[2], oldParts[3],
-                                                                  oldParts[4], oldParts[5], oldParts[7], oldParts[8] };     
+                    List<string> oldParts = new List<string>();
+                    foreach (var part in item.Parts)
+                    {
+                        oldParts.Add(part);
+                    }
+                    itm.Parts[0].Name = oldParts[1];
+                    itm.Parts[1].Name = oldParts[0];
+                    itm.Parts[2].Name = oldParts[6];
+                    itm.Parts[3].Name = oldParts[2];
+                    itm.Parts[4].Name = oldParts[3];
+                    itm.Parts[5].Name = oldParts[4];
+                    itm.Parts[6].Name = oldParts[5];
+                    itm.Parts[7].Name = oldParts[7];
+                    itm.Parts[8].Name = oldParts[8];    
                 }
                 else
-                    itm.Parts = new List<string>(item.Parts);
+                {
+                    itm.Parts = new List<WillowSaveGame.Part>();
+
+                    for (int i = 0; i < item.Parts.Count; i++)
+                    {
+                        WillowSaveGame.Part p = new WillowSaveGame.Part();
+                        p.Name = item.Parts[i];
+                        itm.Parts.Add(p);
+                    }
+                }
 
                 //Item/Weapon in bank have their type increase by 1, we  increase TypeId by 1 to restore them to their natural value
                 itm.TypeId = (byte)(item.Type + 1);

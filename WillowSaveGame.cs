@@ -149,9 +149,15 @@ namespace WillowTree
             writer.Write(ReadBytes(BitConverter.GetBytes((short)value), sizeof(short), Endian));
         }
 
+        private static byte[] GetBytesFromInt(int value, ByteOrder Endian)
+        {
+            return ReadBytes(BitConverter.GetBytes(value), sizeof(int), Endian);
+        }
+
         ///<summary>Reads a string in the format used by the WSGs</summary>
         private static string ReadString(BinaryReader reader, ByteOrder endian)
         {
+            Console.WriteLine("Read from" + reader.BaseStream.Position);
             int tempLengthValue = ReadInt32(reader, endian);
             if (tempLengthValue == 0)
                 return string.Empty;
@@ -219,6 +225,58 @@ namespace WillowTree
             // Return the string, excluding the null terminator
             return value.Substring(0, nullTerminatorIndex);
         }
+        ///<summary>Reads a string in the format used by the WSGs</summary>
+        private static byte[] SearchForString(BinaryReader reader, ByteOrder endian)
+        {
+            var bytes = new List<byte>();
+            long position;
+            byte[] data;
+
+            while (true)
+            {
+                position = reader.BaseStream.Position;
+                Console.WriteLine(position);
+                int tempLengthValue = ReadInt32(reader, endian);
+                bool isLess = false;
+                string value;
+                if (tempLengthValue < 0)
+                {
+                    tempLengthValue = -tempLengthValue * 2;
+                    isLess = true;
+                }
+                if (tempLengthValue == 0 || tempLengthValue > 4096)
+                {
+                    bytes.AddRange(GetBytesFromInt(tempLengthValue, endian));
+                    continue;
+                }
+                data = reader.ReadBytes(tempLengthValue);
+                if (data.Length != tempLengthValue)
+                    throw new EndOfStreamException();
+                if (isLess)
+                {
+                    value = Encoding.Unicode.GetString(data);
+                }
+                else
+                {
+                    value = SingleByteEncoding.GetString(data);
+                }
+                int nullTerminatorIndex = value.IndexOf('\0');
+                if (nullTerminatorIndex != value.Length - 1)
+                {
+                    bytes.AddRange(GetBytesFromInt(tempLengthValue, endian));
+                }
+                else
+                {
+                    //Found String put the file cursor just before 
+                    reader.BaseStream.Position = position;
+                    Console.WriteLine(position);
+                    break;
+                }
+            }
+
+            // Return the string, excluding the null terminator
+            return bytes.ToArray();
+        }
         private static void Write(BinaryWriter writer, string value, ByteOrder endian)
         {
             // Null and empty strings are treated the same (with an output
@@ -253,6 +311,50 @@ namespace WillowTree
                 // Write null terminator.
                 writer.Write((short)0);
             }
+        }
+
+        private static byte[] GetBytesFromString(string value, ByteOrder endian)
+        {
+            var bytes = new List<byte>();
+            // Null and empty strings are treated the same (with an output
+            // length of zero).
+            if (string.IsNullOrEmpty(value))
+            {
+                return bytes.ToArray();
+            }
+
+            bool requiresUnicode = isUnicode(value);
+            // Generate the bytes (either single-byte or Unicode, depending on input).
+            if (!requiresUnicode)
+            {
+                var lenght = GetBytesFromInt(value.Length + 1, endian);
+                foreach (var b in lenght)
+                {
+                    bytes.Add(b);
+                }
+                var str = SingleByteEncoding.GetBytes(value);
+                foreach (var b in str)
+                {
+                    bytes.Add(b);
+                }
+                bytes.Add((byte)0);
+            }
+            else
+            {
+                var lenght = GetBytesFromInt(-1 - value.Length, endian);
+                foreach (var b in lenght)
+                {
+                    bytes.Add(b);
+                }
+                var str = Encoding.Unicode.GetBytes(value);
+                foreach (var b in str)
+                {
+                    bytes.Add(b);
+                }
+                bytes.Add((byte)0);
+                bytes.Add((byte)0);
+            }
+            return bytes.ToArray();
         }
         /// <summary> Look for any non-ASCII characters in the input.</summary>
         private static bool isUnicode(string value)
@@ -719,30 +821,93 @@ namespace WillowTree
             WT_Icon.Close();
         }
 
-        private RawDataInfo CheckIntPadding(BinaryReader reader, int paddingSize)
+        private enum PADDINGTYPE
         {
+            BYTE,
+            INT16,
+            INT32,
+            LONG,
+            UNKNOWN
+        }
+
+        private PADDINGTYPE GetPaddingTypeFromSize(int size)
+        {
+            switch (size)
+            {
+                case 1:
+                    return PADDINGTYPE.BYTE;
+                case sizeof(Int16):
+                    return PADDINGTYPE.INT16;
+                case sizeof(Int32):
+                    return PADDINGTYPE.INT32;
+                case sizeof(long):
+                    return PADDINGTYPE.LONG;
+                default:
+                    return PADDINGTYPE.UNKNOWN;
+            }
+        }
+
+        private RawDataInfo CheckPadding(BinaryReader reader, int paddingSize)
+        {
+            Console.WriteLine(paddingSize);
+            var paddingType = GetPaddingTypeFromSize(paddingSize); 
             var rd = new RawDataInfo();
+            if (paddingType == PADDINGTYPE.UNKNOWN)
+                return rd;
             int count = -paddingSize;
-            rd.data = ReadBytes(reader, paddingSize, EndianWSG);
+            rd.data = ReadBytes(reader, paddingSize > 4 ? 4 : paddingSize, EndianWSG);
             bool findString = false;
             while (!findString && rd.data.Length < sizeof(int) * 2)
             {
-                var extraPaddingData = ReadInt32(reader, EndianWSG);
+                var d = ReadBytes(reader, paddingSize > 4 ? 4 : paddingSize, EndianWSG);
 
-                //There is not item smaller or langer than this
-                if (extraPaddingData > 10 && extraPaddingData < 128)
+                long extraPaddingData = 0;
+                switch (paddingType)
                 {
-                    Console.WriteLine("No padding ->" + extraPaddingData);
-                    reader.BaseStream.Position -= 4;
-                    findString = true;
+                    case PADDINGTYPE.BYTE:
+                        Console.WriteLine("BYTE");
+                        //Looking for non null byte
+                        extraPaddingData = d[0];
+                        rd.nextValue = d[0];
+                        if (extraPaddingData != 0)
+                        {
+                            Console.WriteLine("No padding ->" + extraPaddingData);
+                            reader.BaseStream.Position -= paddingSize;
+                            findString = true;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Padding ->" + extraPaddingData);
+                            rd.data = rd.data.Concat(d).ToArray();
+                        }
+                        break;
+                    case PADDINGTYPE.INT16:
+                        Console.WriteLine("INT16");
+                        extraPaddingData = BitConverter.ToInt16(ReadBytes(d, sizeof(Int16), EndianWSG), 0);
+                        break;
+                    case PADDINGTYPE.INT32:
+                    case PADDINGTYPE.LONG:
+                        Console.WriteLine("INT32");
+                        //Looking for next string
+                        rd.nextValue = BitConverter.ToInt32(ReadBytes(d, sizeof(int), EndianWSG), 0);
+                        extraPaddingData = rd.nextValue;
+                        //There is not item smaller or langer than this
+                        if (extraPaddingData > 10 && extraPaddingData < 128)
+                        {
+                            Console.WriteLine("No padding ->" + extraPaddingData);
+                            reader.BaseStream.Position -= 4;
+                            findString = true;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Padding ->" + extraPaddingData);
+                            rd.data = rd.data.Concat(d).ToArray();
+                        }
+                        break;
+                    default:
+                        return rd;
                 }
-                else
-                {
-                    Console.WriteLine("Padding ->" + extraPaddingData);
-                    rd.data = rd.data.Concat(
-        ReadBytes(BitConverter.GetBytes(extraPaddingData), sizeof(int), EndianWSG)
-        ).ToArray();
-                }
+                
             }
             return rd;
         }
@@ -792,19 +957,6 @@ namespace WillowTree
             var item = new T();
             item.Strings = item.readStrings(reader, EndianWSG);
             item.Values = item.readValues(reader, EndianWSG);
-            if (RevisionNumber > 38)
-            {
-                if ((item.Values[3] == 0) || (item.Strings[0].Substring(0, 3) != "dlc"))
-                {
-                    rd = CheckIntPadding(reader, isDLC ? 0 : paddingSize);
-                }
-                else
-                {
-                    paddingSize += sizeof(int);
-                    rd = CheckIntPadding(reader, paddingSize);
-                }
-                item.Paddings = rd.data;
-            }
             return item;
         }
 
@@ -815,6 +967,10 @@ namespace WillowTree
             {
                 Console.WriteLine(Progress + "/" + groupSize);
                 Objects.Add(ReadObject<T>(reader, ref rd, paddingSize, isDLC));
+                if (RevisionNumber > 38 && Progress < groupSize - 1)
+                {
+                    Objects[Objects.Count -1].Paddings = SearchForString(reader, EndianWSG);
+                }
             }
         }
 
@@ -978,8 +1134,10 @@ namespace WillowTree
                             DLC.BankSize = ReadInt32(dlcDataReader, EndianWSG);
                             int bankEntriesCount = ReadInt32(dlcDataReader, EndianWSG);
                             DLC.BankInventory = new List<BankEntry>();
+                            Console.WriteLine("==========ENTER BANK===========");
                             for (int i = 0; i < bankEntriesCount; i++)
-                                DLC.BankInventory.Add(ReadBankEntry(dlcDataReader, EndianWSG));
+                                DLC.BankInventory.Add(CreateBankEntry(dlcDataReader));
+                            Console.WriteLine("==========EXIT BANK===========");
                             break;
                         case DLC_Data.Section2Id: // 0x02151984
                             DLC.HasSection2 = true;
@@ -1598,15 +1756,360 @@ namespace WillowTree
             }
         }
 
+        //public sealed class BankEntry
+        //{
+        //    public Byte TypeId;
+        //    public List<string> Parts = new List<string>();
+        //    public Int32 Quantity; //AmmoOrQuantity
+        //    public Byte Equipped;
+        //    public Int16 Quality;
+        //    public Int16 Level;
+        //    public byte[] padding;
+
+        //    public void PrintParts()
+        //    {
+        //        foreach (var part in Parts)
+        //        {
+        //            Console.WriteLine(part);
+        //        }
+        //    }
+        //}
+        private static byte SUBPART = 32;
+        public interface IPart
+        {
+            byte[] GetBytes(ByteOrder endian);
+            string Init(BinaryReader reader, ByteOrder endian, BankEntry entry);
+        }
+
+        public class Part : IPart {
+            public byte[] Unknown1;
+            public byte Mask;
+            public byte[] Unknown2;// Could be size 12 or 8 for Unique part
+            public string Name;
+            public byte[] ExtraData = null;
+
+            public virtual byte[] GetBytes(ByteOrder endian)
+            {
+                var bytes = new List<byte>();
+
+                if (Unknown1 != null)
+                    bytes.AddRange(Unknown1);
+                bytes.Add(Mask);
+                bytes.AddRange(Unknown2);
+                string[] splitPart = Name.Split('.');
+                foreach (var str in splitPart)
+                {
+                    var tmpStr = GetBytesFromString(str, endian);
+                    foreach (var b in tmpStr)
+                    {
+                        bytes.Add(b);
+                    }
+                }
+                if (ExtraData != null)
+                    bytes.AddRange(ExtraData);
+                return bytes.ToArray();
+            }
+
+            public virtual string Init(BinaryReader reader, ByteOrder endian, BankEntry entry)
+            {
+                var bytes1 = new List<byte>();
+                var bytes2 = new List<byte>();
+
+                var mask = reader.ReadByte();
+                if (mask == SUBPART)
+                {
+                    Mask = mask;
+                }
+                else if (mask == 0)
+                {
+                    reader.BaseStream.Position -= 1;
+                    bytes1.AddRange(PaddingShort(reader, endian));
+                    Mask = reader.ReadByte();
+                }
+                else
+                {
+                    reader.BaseStream.Position -= 1;
+
+                    UInt32 temp = (UInt32)ReadInt32(reader, endian);
+                    entry.Quality = (Int16)(temp % (UInt32)65536);
+                    entry.Level = (Int16)(temp / (UInt32)65536);
+                    Mask = reader.ReadByte();
+                }
+                Unknown1 = bytes1.ToArray();
+                bytes2.AddRange(PaddingShort(reader, endian));
+                Unknown2 = bytes2.ToArray();
+
+                Name = ReadBankEntryPart(reader, endian, Unknown2.Length);
+
+                return Name.Split('.')[1].Split('_')[0];
+            }
+            protected static byte[] PaddingShort(BinaryReader reader, ByteOrder endian)
+            {
+                var bytes = new List<byte>();
+                var b = ReadBytes(reader, 1, endian);
+                short val = b[0];
+                if (val != 0)
+                {
+                    reader.BaseStream.Position -= 1;
+                    return null;
+                }
+
+                bytes.AddRange(b);
+                //Looking for next byte != 0
+                while (val == 0)
+                {
+                    b = ReadBytes(reader, 1, endian);
+                    val = b[0];
+                    if (val == 0)
+                        bytes.AddRange(b);
+                    else
+                        reader.BaseStream.Position -= 1;
+                }
+                return bytes.ToArray();
+            }
+        }
+        public class WeaponPart : Part
+        {
+            public override string Init(BinaryReader reader, ByteOrder endian, BankEntry entry)
+            {
+                var category = base.Init(reader, endian, entry);
+                switch (category)
+                {
+                    case "Manufacturers":
+                        ExtraData = ReadBytes(reader, 4, endian); //Manufacturers ID (int)
+                        break;
+                    case "Title":
+                        ExtraData = ReadBytes(reader, 13, endian);//??
+                        var padding = PaddingShort(reader, endian);
+                        if (padding != null)
+                        {
+                            if (ExtraData == null)
+                                ExtraData = padding;
+                            else
+                                ExtraData = ExtraData.Concat(padding).ToArray();
+                        }
+                        break;
+                    default:
+                        break;
+                }
+
+                return category;
+            }
+    }
+
+        public class ItemPart : Part
+        {
+            public override string Init(BinaryReader reader, ByteOrder endian, BankEntry entry)
+            {
+                var category = base.Init(reader, endian, entry);
+                switch (category)
+                {
+                    case "Title":
+                        ExtraData = ReadBytes(reader, 10, endian);//Unknown
+                        var padding = PaddingShort(reader, endian);
+                        if (padding != null)
+                        {
+                            if (ExtraData == null)
+                                ExtraData = padding;
+                            else
+                                ExtraData = ExtraData.Concat(padding).ToArray();
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                //var padding = PaddingShort(reader, endian);
+                //if (padding != null)
+                //{
+                //    if (ExtraData == null)
+                //        ExtraData = padding;
+                //    else
+                //        ExtraData = ExtraData.Concat(padding).ToArray();
+                //}
+                return category;
+            }
+        }
+
         public sealed class BankEntry
         {
             public Byte TypeId;
-            public List<string> Parts = new List<string>();
+            public List<Part> Parts = new List<Part>();
             public Int32 Quantity; //AmmoOrQuantity
             public Byte Equipped;
             public Int16 Quality;
             public Int16 Level;
             public byte[] padding;
+
+            public void PrintParts()
+            {
+                foreach (var part in Parts)
+                {
+                    Console.WriteLine(part.Name);
+                }
+            }
+        }
+
+
+        public enum BankEntryType
+        {
+            Item,
+            Weapon,
+            Unknown
+        }
+
+        private static string ReadBankEntryPart(BinaryReader reader, ByteOrder endian, int size)
+        {
+            string partName = "";
+            for (int i = 0; i < (size == 8 ? 4 : 3); i++)
+            {
+                var tmp = ReadString(reader, endian);
+                if (i != 0)
+                    partName += "." + tmp;
+                else
+                    partName += tmp;
+            }
+
+            return partName;
+        }
+
+        private static string[] checkItemIntegrity = new string[9]
+        {
+            "A",
+            "",
+            "Manufacturers",
+            "Body",
+            "LeftSide",
+            "RightSide",
+            "ManufacturerMaterials",
+            "Prefix",
+            "Title"
+        };
+
+        private void BankEntryParseItem(BinaryReader reader, out BankEntry entry)
+        {
+            Console.WriteLine("Item");
+            entry = new BankEntry();
+            //Read PartName
+            //
+            //Type of Item
+            //Gear
+            //Manufacturer
+            //Body
+            //Left Side
+            //Right Side
+            //Material (Optional)
+            //Prefix
+            //Title
+            var category = "";
+            while (category != "Title")
+            {
+                Part part = new ItemPart();
+                category = part.Init(reader, EndianWSG, entry);
+                entry.Parts.Add(part);
+            }
+
+            for (int i = 0; i < 9; i++)
+            {
+                category = entry.Parts[i].Name.Split('.')[1].Split('_')[0];
+                if (checkItemIntegrity[i] != category && i != 1)
+                {
+                    Console.WriteLine(checkItemIntegrity[i] + "/" + category);
+                    var part = new ItemPart
+                    {
+                        Name = "None"
+                    };
+                    entry.Parts.Insert(i, part);
+                }
+            }
+
+            entry.PrintParts();
+        }
+        private static string[] checkWeaponIntegrity = new string[14]
+        {
+            "a",
+            "weapons",
+            "manufacturers",
+            "body",
+            "grip",
+            "mag",
+            "barrel",
+            "sight",
+            "stock",
+            "action",
+            "acc",
+            "material",
+            "prefix",
+            "title"
+        };
+        private void BankEntryParseWeapon(BinaryReader reader, out BankEntry entry)
+        {
+            Console.WriteLine("Weapon");
+            entry = new BankEntry();
+            var category = "";
+            while (category != "Title")
+            {
+                Part part = new WeaponPart();
+                category = part.Init(reader, EndianWSG, entry);
+                entry.Parts.Add(part);
+            }
+
+            for (int i = 0; i < 14; i++)
+            {
+                category = entry.Parts[i].Name.ToLower();
+                if (!category.Contains(checkWeaponIntegrity[i]))
+                {
+                    Console.WriteLine(checkWeaponIntegrity[i] + "/" + category);
+                    var part = new WeaponPart
+                    {
+                        Name = "None"
+                    };
+                    entry.Parts.Insert(i, part);
+                }
+            }
+            
+            entry.PrintParts();
+        }
+
+        private BankEntryType CheckEntryType(BinaryReader reader)
+        {
+            var t = reader.ReadByte();
+            switch (t)
+            {
+                case 1:
+                    return BankEntryType.Weapon;
+                case 2:
+                    return BankEntryType.Item;
+                default:
+                    Console.WriteLine("Unknown type->" + t);
+                    return BankEntryType.Unknown;
+            }
+        }
+
+        private BankEntry CreateBankEntry(BinaryReader reader)
+        {
+            //Check entry type
+            var entryType = CheckEntryType(reader);
+
+            //Create new entry
+            BankEntry entry;
+
+            //Select the right parsing function
+            switch (entryType)
+            {
+                case BankEntryType.Item:
+                    BankEntryParseItem(reader, out entry);
+                    entry.TypeId = 2;
+                    return entry;
+                case BankEntryType.Weapon:
+                    BankEntryParseWeapon(reader, out entry);
+                    entry.TypeId = 1;
+                    return entry;
+                case BankEntryType.Unknown:
+                    break;
+                default:
+                    break;
+            }
+            return null;
         }
 
         private static string ReadBankString(BinaryReader reader, ByteOrder EndianWSG)
@@ -1674,91 +2177,94 @@ namespace WillowTree
             }
         }
 
-        private BankEntry ReadBankEntry(BinaryReader br, ByteOrder endian)
-        {
-            BankEntry entry = new BankEntry();
-            int partCount;
-            entry.TypeId = br.ReadByte();
+        //private BankEntry ReadBankEntry(BinaryReader br, ByteOrder endian)
+        //{
+        //    Console.WriteLine("Bank");
+        //    BankEntry entry = new BankEntry();
+        //    int partCount;
+        //    entry.TypeId = br.ReadByte();
 
-            switch (entry.TypeId)
-            {
-                case 1:
-                case 2:
-                    break;
-                default:
-                    throw new FormatException("Bank entry to be written has invalid Type ID.  TypeId = " + entry.TypeId);
-            }
+        //    switch (entry.TypeId)
+        //    {
+        //        case 1:
+        //        case 2:
+        //            break;
+        //        default:
+        //            throw new FormatException("Bank entry to be written has invalid Type ID.  TypeId = " + entry.TypeId);
+        //    }
 
-            for (int i = 0; i < 3; i++)
-                entry.Parts.Add(ReadBankString(br, endian));
+        //    for (int i = 0; i < 3; i++)
+        //    {
+        //        var s = ReadString(br, endian);
+        //        Console.WriteLine(s);
+        //        entry.Parts.Add(s);
+        //    }
+                
 
-            UInt32 temp = (UInt32)ReadInt32(br, endian);
-            entry.Quality = (Int16)(temp % (UInt32)65536);
-            entry.Level = (Int16)(temp / (UInt32)65536);
+        //    UInt32 temp = (UInt32)ReadInt32(br, endian);
+        //    entry.Quality = (Int16)(temp % (UInt32)65536);
+        //    entry.Level = (Int16)(temp / (UInt32)65536);
 
-            switch (entry.TypeId)
-            {
-                case 1:
-                    partCount = 14;
-                    break;
-                case 2:
-                    partCount = 9;
-                    break;
-                default:
-                    partCount = 0;
-                    break;
-            }
+        //    switch (entry.TypeId)
+        //    {
+        //        case 1:
+        //            partCount = 14;
+        //            break;
+        //        case 2:
+        //            partCount = 9;
+        //            break;
+        //        default:
+        //            partCount = 0;
+        //            break;
+        //    }
 
-            for (int i = 3; i < partCount; i++)
-                entry.Parts.Add(ReadBankString(br, endian));
+        //    for (int i = 3; i < partCount; i++)
+        //        entry.Parts.Add(ReadBankString(br, endian));
 
-            byte[] Footer = br.ReadBytes(10);
-            // da_fileserver's investigation has led him to believe the footer bytes are:
-            // (Int)GameStage - default 0
-            // (Int)AwesomeLevel - default 0
-            // (Byte)Equipped - default 0
-            // (Byte)DropOnDeath - default 1 (this is whether an npc would drop it when it dies not you)
-            // (Byte)ShopsHaveInfiniteQuantity - default 0
-            // matt911 - It seems apparent that this table is used for more than just the bank inventory 
-            // in the game.  None of the values are stored in the inventory part of the savegame
-            // except Equipped and even that will be updated immediately when you take the item
-            // out of the bank.  I've never seen any of these with anything except the default value
-            // in the bank except Equipped so I will store that in case it is not what we think it
-            // is and it is important, but I am doubtful that it is.
-            for (int i = 0; i < 7; i++)
-                System.Diagnostics.Debug.Assert(Footer[i] == 0);
-            System.Diagnostics.Debug.Assert(Footer[9] == 1); // This might be 1 for a health pack
-            entry.Equipped = Footer[8];
+        //    byte[] Footer = br.ReadBytes(10);
+        //    // da_fileserver's investigation has led him to believe the footer bytes are:
+        //    // (Int)GameStage - default 0
+        //    // (Int)AwesomeLevel - default 0
+        //    // (Byte)Equipped - default 0
+        //    // (Byte)DropOnDeath - default 1 (this is whether an npc would drop it when it dies not you)
+        //    // (Byte)ShopsHaveInfiniteQuantity - default 0
+        //    // matt911 - It seems apparent that this table is used for more than just the bank inventory 
+        //    // in the game.  None of the values are stored in the inventory part of the savegame
+        //    // except Equipped and even that will be updated immediately when you take the item
+        //    // out of the bank.  I've never seen any of these with anything except the default value
+        //    // in the bank except Equipped so I will store that in case it is not what we think it
+        //    // is and it is important, but I am doubtful that it is.
+        //    for (int i = 0; i < 7; i++)
+        //        System.Diagnostics.Debug.Assert(Footer[i] == 0);
+        //    System.Diagnostics.Debug.Assert(Footer[9] == 1); // This might be 1 for a health pack
+        //    entry.Equipped = Footer[8];
 
-            switch (entry.TypeId)
-            {
-                case 1: // weapon
-                    entry.Quantity = ReadInt32(br, endian);
-                    break;
-                case 2: // item
-                    entry.Quantity = (int)br.ReadByte();
-                    break;
-                default:
-                    entry.Quantity = 0;
-                    break;
-            }
-            if (RevisionNumber > 38)
-            {
-                List<byte> bytes = new List<byte>();
-                byte value = 0;
-                int count = 0;
-                while (value == 0)
-                {
-                    value = ReadBytes(br, 1, EndianWSG)[0];
-                    if (value == 0)
-                        bytes.Add(value);
-                    count++;
-                }
-                entry.padding = bytes.ToArray();
-                br.BaseStream.Position -= 1;
-            }
-            return entry;
-        }
+        //    switch (entry.TypeId)
+        //    {
+        //        case 1: // weapon
+        //            entry.Quantity = ReadInt32(br, endian);
+        //            break;
+        //        case 2: // item
+        //            entry.Quantity = (int)br.ReadByte();
+        //            break;
+        //        default:
+        //            entry.Quantity = 0;
+        //            break;
+        //    }
+        //    if (RevisionNumber > 38)
+        //    {
+        //        RawDataInfo rd = null;
+        //        do
+        //        {
+        //            rd = CheckPadding(br, 1);
+        //            if (entry.padding == null)
+        //                entry.padding = rd.data;
+        //            else
+        //                entry.padding = entry.padding.Concat(rd.data).ToArray();
+        //        } while (rd.nextValue == 0);
+        //    }
+        //    return entry;
+        //}
         private static void WriteBankEntry(BinaryWriter bw, BankEntry entry, ByteOrder Endian, int version)
         {
             if (entry.Parts.Count < 3)
@@ -1775,15 +2281,15 @@ namespace WillowTree
                     throw new FormatException("Bank entry to be written has an invalid Type ID.  TypeId = " + entry.TypeId);
             }
 
-            for (int i = 0; i < 3; i++)
-                WriteBankString(bw, entry.Parts[i], Endian);
+            //for (int i = 0; i < 3; i++)
+            //    WriteBankString(bw, entry.Parts[i], Endian);
 
-            UInt32 grade = (UInt16)entry.Quality + (UInt16)entry.Level * (UInt32)65536;
+            //UInt32 grade = (UInt16)entry.Quality + (UInt16)entry.Level * (UInt32)65536;
 
-            Write(bw, (Int32)grade, Endian);
+            //Write(bw, (Int32)grade, Endian);
 
-            for (int i = 3; i < entry.Parts.Count; i++)
-                WriteBankString(bw, entry.Parts[i], Endian);
+            //for (int i = 3; i < entry.Parts.Count; i++)
+            //    WriteBankString(bw, entry.Parts[i], Endian);
 
             // see ReadBankEntry for notes about the footer bytes
             Byte[] Footer = new Byte[10] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };

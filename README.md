@@ -27,6 +27,10 @@ Major revisions by JackSchitt, matt911, and da_fileserver.
 Additional  ideas and code contributions by CK Y and mphjens.
 
 WillowTree# is an open source project.  Visit the development site at willowtree.sourceforge.net.
+-------------------------
+Update prerelease v2.3.1
+- Rewrite bank objects parsing
+- Loading and Saving should work now
 
 -------------------------
 Update prerelease v2.3.1

@@ -132,7 +132,7 @@ namespace WillowTree
             // Populate itmList with items created from the WillowSaveGame data lists
             itmList.ClearSilent();
             foreach (var obj in objs)
-                itmList.AddSilent(new InventoryEntry(itmList.invType, obj.Strings, obj.Values, obj.Paddings));
+                itmList.AddSilent(new InventoryEntry(itmList.invType, obj.Strings, obj.Values));
             itmList.OnListReload();
 
             // Release the WillowSaveGame data lists now that the data is converted
@@ -163,17 +163,15 @@ namespace WillowTree
             itmList.ClearSilent();
             for (int i = 0; i < itmBank.Count; i++)
             {
-                List<int> itmBankValues = new List<int>() { itmBank[i].Quantity, itmBank[i].Quality, itmBank[i].Equipped, itmBank[i].Level };
+                List<int> itmBankValues = new List<int>() { itmBank[i].Quantity, itmBank[i].Quality, itmBank[i].EquipedSlot, itmBank[i].Level };
 
                 // Store a reference to the parts list
                 List<string> parts = new List<string>();
-                List<WillowSaveGame.IPart> partsItem = new List<WillowSaveGame.IPart>();
                 int itmType = itmBank[i].TypeId - 1;
 
-                foreach (var part in itmBank[i].Parts)
+                foreach (var part in itmBank[i].Strings)
                 {
-                    parts.Add(part.Name);
-                    partsItem.Add(part);
+                    parts.Add(part);
                 }
 
                 //// Detach the parts list from the bank entry.
@@ -200,28 +198,19 @@ namespace WillowTree
                 if (itmType == InventoryType.Item)
                 {
                     string temp = parts[1];
-                    WillowSaveGame.IPart temp1 = partsItem[1];
                     parts[1] = parts[0];
-                    partsItem[1] = partsItem[0];
                     parts[0] = temp;
-                    partsItem[0] = temp1;
                     temp = parts[2];
-                    temp1 = partsItem[2];
                     parts[2] = parts[3];
-                    partsItem[2] = partsItem[3];
                     parts[3] = parts[4];
-                    partsItem[3] = partsItem[4];
                     parts[4] = parts[5];
-                    partsItem[4] = partsItem[5];
                     parts[5] = parts[6];
-                    partsItem[5] = partsItem[6];
                     parts[6] = temp;
-                    partsItem[6] = temp1;
                 }
                 
                 
                 // Create an inventory entry with the re-ordered parts list and add it
-                itmList.AddSilent(new InventoryEntry((byte)(itmBank[i].TypeId - 1), parts, itmBankValues, partsItem));
+                itmList.AddSilent(new InventoryEntry((byte)(itmBank[i].TypeId - 1), parts, itmBankValues));
                 //Item/Weapon in bank have their type increase by 1, we reduce TypeId by 1 to manipulate them like other list
             }
             itmList.OnListReload();
@@ -269,12 +258,6 @@ namespace WillowTree
                 {
                     obj.Values.Add(value);
                 }
-                if (item.padding != null)
-                {
-                    obj.Paddings = new byte[item.padding.Length];
-                    Array.Copy(item.padding, obj.Paddings, item.padding.Length);
-                    objs.Add(obj);
-                }
             }
 
             // itm may represent: item, weapon, bank
@@ -300,33 +283,29 @@ namespace WillowTree
                 if (item.Type == InventoryType.Item)
                 {
                     // Items must have their parts reordered because they are different in the bank.
-                    List<WillowSaveGame.IPart> oldPartsItem = new List<WillowSaveGame.IPart>();
-                    for (int i = 0; i < item.Parts.Count; i++)
+                    List<string> oldPartsItem = new List<string>();
+                    foreach (var part in item.Parts)
                     {
-                        var itmBk = item.PartsBank[i];
-                        itmBk.Name = item.Parts[i];
-                        oldPartsItem.Add(itmBk);
+                        oldPartsItem.Add(part);
                     }
 
-                    itm.Parts.Add(oldPartsItem[1]);
-                    itm.Parts.Add(oldPartsItem[0]);
-                    itm.Parts.Add(oldPartsItem[6]);
-                    itm.Parts.Add(oldPartsItem[2]);
-                    itm.Parts.Add(oldPartsItem[3]);
-                    itm.Parts.Add(oldPartsItem[4]);
-                    itm.Parts.Add(oldPartsItem[5]);
-                    itm.Parts.Add(oldPartsItem[7]);
-                    itm.Parts.Add(oldPartsItem[8]);
+                    itm.Strings.Add(oldPartsItem[1]);
+                    itm.Strings.Add(oldPartsItem[0]);
+                    itm.Strings.Add(oldPartsItem[6]);
+                    itm.Strings.Add(oldPartsItem[2]);
+                    itm.Strings.Add(oldPartsItem[3]);
+                    itm.Strings.Add(oldPartsItem[4]);
+                    itm.Strings.Add(oldPartsItem[5]);
+                    itm.Strings.Add(oldPartsItem[7]);
+                    itm.Strings.Add(oldPartsItem[8]);
                 }
                 else
                 {
-                    itm.Parts = new List<WillowSaveGame.IPart>();
+                    itm.Strings = new List<string>();
 
-                    for (int i = 0; i < item.Parts.Count; i++)
+                    foreach (var part in item.Parts)
                     {
-                        var itmBk = item.PartsBank[i];
-                        itmBk.Name = item.Parts[i];
-                        itm.Parts.Add(itmBk);
+                        itm.Strings.Add(part);
                     }
                 }
 
@@ -339,9 +318,8 @@ namespace WillowTree
                 //if (Convert.ToBoolean(values[4])) //TODO RSM UsesBigLevel
                 itm.Quantity = values[0];//Quantity;
                 itm.Quality = (short)values[1];//QualityIndex;
-                itm.Equipped = (byte)values[2];//Equipped;
-                itm.Level = (short)values[3];//LevelIndex;
-
+                itm.EquipedSlot = (byte)values[2];//Equipped;
+                itm.Level = (short)values[3];//LevelIndex
                 itmBank.Add(itm);
             }
 
@@ -360,7 +338,7 @@ namespace WillowTree
 
         private void Open_Click(object sender, EventArgs e)
         {
-            string fileName = (CurrentWSG != null) ? CurrentWSG.OpenedWSG : "";
+            string fileName = (CurrentWSG != null) ? CurrentWSG.OpenedWsg : "";
 
             Util.WTOpenFileDialog openDlg = new Util.WTOpenFileDialog("sav", fileName);
             if (openDlg.ShowDialog() == DialogResult.OK)
@@ -371,7 +349,7 @@ namespace WillowTree
                 Application.DoEvents();
                 CurrentWSG = new WillowSaveGame();
                 CurrentWSG.AutoRepair = true;
-                CurrentWSG.LoadWSG(fileName);
+                CurrentWSG.LoadWsg(fileName);
 
                 if (CurrentWSG.RequiredRepair == true)
                 {
@@ -390,7 +368,7 @@ namespace WillowTree
 
                 ConvertListForEditing(db.WeaponList, ref CurrentWSG.Weapons);
                 ConvertListForEditing(db.ItemList, ref CurrentWSG.Items);
-                ConvertListForEditing(db.BankList, ref CurrentWSG.DLC.BankInventory);
+                ConvertListForEditing(db.BankList, ref CurrentWSG.Dlc.BankInventory);
 
                 PluginManager.OnGameLoaded(new PluginEventArgs(this, fileName));
 
@@ -405,32 +383,32 @@ namespace WillowTree
         {
             try
             {
-                File.Copy(CurrentWSG.OpenedWSG, CurrentWSG.OpenedWSG + ".bak0", true);
-                if (File.Exists(CurrentWSG.OpenedWSG + ".bak10") == true)
-                    File.Delete(CurrentWSG.OpenedWSG + ".bak10");
+                File.Copy(CurrentWSG.OpenedWsg, CurrentWSG.OpenedWsg + ".bak0", true);
+                if (File.Exists(CurrentWSG.OpenedWsg + ".bak10") == true)
+                    File.Delete(CurrentWSG.OpenedWsg + ".bak10");
                 for (int i = 9; i >= 0; i--)
                 {
-                    if (File.Exists(CurrentWSG.OpenedWSG + ".bak" + i) == true)
-                        File.Move(CurrentWSG.OpenedWSG + ".bak" + i, CurrentWSG.OpenedWSG + ".bak" + (i + 1));
+                    if (File.Exists(CurrentWSG.OpenedWsg + ".bak" + i) == true)
+                        File.Move(CurrentWSG.OpenedWsg + ".bak" + i, CurrentWSG.OpenedWsg + ".bak" + (i + 1));
                 }
             }
             catch { }
 
 //            try
             {
-                SaveToFile(CurrentWSG.OpenedWSG);
-                MessageBox.Show("Saved WSG to: " + CurrentWSG.OpenedWSG);
+                SaveToFile(CurrentWSG.OpenedWsg);
+                MessageBox.Show("Saved WSG to: " + CurrentWSG.OpenedWsg);
             }
 //            catch { MessageBox.Show("Couldn't save WSG"); }
         }
         private void SaveAs_Click(object sender, EventArgs e)
         {
-            Util.WTSaveFileDialog tempSave = new Util.WTSaveFileDialog("sav", CurrentWSG.OpenedWSG);
+            Util.WTSaveFileDialog tempSave = new Util.WTSaveFileDialog("sav", CurrentWSG.OpenedWsg);
 
             if (tempSave.ShowDialog() == DialogResult.OK)
             {
                     SaveToFile(tempSave.FileName());
-                    MessageBox.Show("Saved WSG to: " + CurrentWSG.OpenedWSG);
+                    MessageBox.Show("Saved WSG to: " + CurrentWSG.OpenedWsg);
                     Save.Enabled = true;
             }
         }
@@ -454,16 +432,16 @@ namespace WillowTree
             if (CurrentWSG.Platform == "PC")
                 return;
 
-            if ((CurrentWSG.ContainsRawData == true) && (CurrentWSG.EndianWSG != ByteOrder.LittleEndian))
+            if ((CurrentWSG.ContainsRawData == true) && (CurrentWSG.EndianWsg != ByteOrder.LittleEndian))
             {
                 if (UIAction_RemoveRawData() == false)
                     return;
             }
 
             CurrentWSG.Platform = "PC";
-            CurrentWSG.EndianWSG = ByteOrder.LittleEndian;
+            CurrentWSG.EndianWsg = ByteOrder.LittleEndian;
             DoWindowTitle();
-            CurrentWSG.OpenedWSG = "";
+            CurrentWSG.OpenedWsg = "";
             Save.Enabled = false;
         }
         private void PS3Format_Click(object sender, EventArgs e)
@@ -471,17 +449,17 @@ namespace WillowTree
             if (CurrentWSG.Platform == "PS3")
                 return;
 
-            if ((CurrentWSG.ContainsRawData == true) && (CurrentWSG.EndianWSG != ByteOrder.BigEndian))
+            if ((CurrentWSG.ContainsRawData == true) && (CurrentWSG.EndianWsg != ByteOrder.BigEndian))
             {
                 if (UIAction_RemoveRawData() == false)
                     return;
             }
 
             CurrentWSG.Platform = "PS3";
-            CurrentWSG.EndianWSG = ByteOrder.BigEndian;
+            CurrentWSG.EndianWsg = ByteOrder.BigEndian;
             DoWindowTitle();
             MessageBox.Show("This save data will be stored in the PS3 format. Please note that you will require \r\nproper SFO, PNG, and PFD files to be transfered back to the \r\nPS3. These can be acquired from another Borderlands save \r\nfor the same profile.");
-            CurrentWSG.OpenedWSG = "";
+            CurrentWSG.OpenedWsg = "";
             Save.Enabled = false;
         }
         private void XBoxFormat_Click(object sender, EventArgs e)
@@ -489,29 +467,29 @@ namespace WillowTree
             if (CurrentWSG.Platform == "X360")
                 return;
 
-            if ((CurrentWSG.ContainsRawData == true) && (CurrentWSG.EndianWSG != ByteOrder.BigEndian))
+            if ((CurrentWSG.ContainsRawData == true) && (CurrentWSG.EndianWsg != ByteOrder.BigEndian))
             {
                 if (UIAction_RemoveRawData() == false)
                     return;
             }
 
-            if (CurrentWSG.DeviceID == null)
+            if (CurrentWSG.DeviceId == null)
             {
                 XBoxIDDialog dlgXBoxID = new XBoxIDDialog();
                 if (dlgXBoxID.ShowDialog() == DialogResult.OK)
                 {
-                    CurrentWSG.ProfileID = dlgXBoxID.ID.ProfileID;
+                    CurrentWSG.ProfileId = dlgXBoxID.ID.ProfileID;
                     int DeviceIDLength = dlgXBoxID.ID.DeviceID.Count();
-                    CurrentWSG.DeviceID = new byte[DeviceIDLength];
-                    Array.Copy(dlgXBoxID.ID.DeviceID, CurrentWSG.DeviceID, DeviceIDLength);
+                    CurrentWSG.DeviceId = new byte[DeviceIDLength];
+                    Array.Copy(dlgXBoxID.ID.DeviceID, CurrentWSG.DeviceId, DeviceIDLength);
                 }
                 else
                     return;
             }
             CurrentWSG.Platform = "X360";
-            CurrentWSG.EndianWSG = ByteOrder.BigEndian;
+            CurrentWSG.EndianWsg = ByteOrder.BigEndian;
             DoWindowTitle();
-            CurrentWSG.OpenedWSG = "";
+            CurrentWSG.OpenedWsg = "";
             Save.Enabled = false;
         }
         private void XBoxJPFormat_Click(object sender, EventArgs e)
@@ -519,29 +497,29 @@ namespace WillowTree
             if (CurrentWSG.Platform == "X360JP")
                 return;
 
-            if ((CurrentWSG.ContainsRawData == true) && (CurrentWSG.EndianWSG != ByteOrder.BigEndian))
+            if ((CurrentWSG.ContainsRawData == true) && (CurrentWSG.EndianWsg != ByteOrder.BigEndian))
             {
                 if (UIAction_RemoveRawData() == false)
                     return;
             }
 
-            if (CurrentWSG.DeviceID == null)
+            if (CurrentWSG.DeviceId == null)
             {
                 XBoxIDDialog dlgXBoxID = new XBoxIDDialog();
                 if (dlgXBoxID.ShowDialog() == DialogResult.OK)
                 {
-                    CurrentWSG.ProfileID = dlgXBoxID.ID.ProfileID;
+                    CurrentWSG.ProfileId = dlgXBoxID.ID.ProfileID;
                     int DeviceIDLength = dlgXBoxID.ID.DeviceID.Count();
-                    CurrentWSG.DeviceID = new byte[DeviceIDLength];
-                    Array.Copy(dlgXBoxID.ID.DeviceID, CurrentWSG.DeviceID, DeviceIDLength);
+                    CurrentWSG.DeviceId = new byte[DeviceIDLength];
+                    Array.Copy(dlgXBoxID.ID.DeviceID, CurrentWSG.DeviceId, DeviceIDLength);
                 }
                 else
                     return;
             }
             CurrentWSG.Platform = "X360JP";
-            CurrentWSG.EndianWSG = ByteOrder.BigEndian;
+            CurrentWSG.EndianWsg = ByteOrder.BigEndian;
             DoWindowTitle();
-            CurrentWSG.OpenedWSG = "";
+            CurrentWSG.OpenedWsg = "";
             Save.Enabled = false;
         }
         
@@ -581,18 +559,18 @@ namespace WillowTree
             CurrentWSG.Items = new List<WillowSaveGame.Item>();
             RepopulateListForSaving(db.WeaponList, ref CurrentWSG.Weapons);
             RepopulateListForSaving(db.ItemList, ref CurrentWSG.Items);
-            RepopulateListForSaving(db.BankList, ref CurrentWSG.DLC.BankInventory);
-            CurrentWSG.SaveWSG(filename);
-            CurrentWSG.OpenedWSG = filename;
+            RepopulateListForSaving(db.BankList, ref CurrentWSG.Dlc.BankInventory);
+            CurrentWSG.SaveWsg(filename);
+            CurrentWSG.OpenedWsg = filename;
 
             // Release the WillowSaveGame inventory data now that saving is complete.  The
             // same data is still contained in db.WeaponList, db.ItemList, and db.BankList
             // in the format used by the WillowTree UI.           
             CurrentWSG.Weapons = null;
             CurrentWSG.Items = null;
-            CurrentWSG.DLC.BankInventory = null;
+            CurrentWSG.Dlc.BankInventory = null;
 
-            PluginManager.OnGameSaved(new PluginEventArgs(this, CurrentWSG.OpenedWSG));
+            PluginManager.OnGameSaved(new PluginEventArgs(this, CurrentWSG.OpenedWsg));
         }
 
         private void NextSort_Click(object sender, EventArgs e)

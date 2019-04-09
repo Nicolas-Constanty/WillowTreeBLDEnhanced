@@ -204,12 +204,12 @@ namespace WillowTree.Plugins
 
             if (OverrideExportSettings.Checked == true)
                 values = InventoryEntry.CalculateValues((int)RemAmmoOverride.Value,
-                    (int)QualityOverride.Value, 0, (int)LevelIndexOverride.Value, ((string)PartsLocker.Items[0]));
+                    (int)QualityOverride.Value, 0, (int)LevelIndexOverride.Value, (int)JunkLocker.Value, (int)LockedLocker.Value, ((string)PartsLocker.Items[0]));
             else
                 values = InventoryEntry.CalculateValues((int)RemAmmoLocker.Value,
-                    (int)QualityLocker.Value, 0, (int)LevelIndexLocker.Value, ((string)PartsLocker.Items[0]));
+                    (int)QualityLocker.Value, 0, (int)LevelIndexLocker.Value, (int)JunkLocker.Value, (int)LockedLocker.Value, ((string)PartsLocker.Items[0]));
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < WillowSaveGame.ExportValuesCount; i++)
                 InOutParts.Add(values[i].ToString());
 
             return string.Join("\r\n", InOutParts.ToArray()) + "\r\n";
@@ -333,6 +333,8 @@ namespace WillowTree.Plugins
                 Util.SetNumericUpDown(RemAmmoLocker, entry.Quantity);
                 QualityLocker.Value = entry.QualityIndex;
                 LevelIndexLocker.Value = entry.LevelIndex;
+                JunkLocker.Value = entry.IsJunk;
+                LockedLocker.Value = entry.IsLocked;
             }
         }
         
@@ -357,6 +359,8 @@ namespace WillowTree.Plugins
             entry.QualityIndex = QualityLocker.Value;
             entry.EquippedSlot = 0;
             entry.LevelIndex = LevelIndexLocker.Value;
+            entry.IsJunk = (int)JunkLocker.Value;
+            entry.IsLocked = (int)LockedLocker.Value;
 
             if (entry.Type == InventoryType.Weapon)
             {

@@ -21,13 +21,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
 using X360.IO;
 using X360.STFS;
 using System.Reflection;
-using System.Windows.Forms;
 
 namespace WillowTree
 {
@@ -45,7 +45,9 @@ namespace WillowTree
         // This also removes the dependence of WillowSaveGame on Windows Forms since
         // Application is a part of the System.Windows.Forms namespace.
         //public static string AppPath = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar;
-        public static string AppPath = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location) + Path.DirectorySeparatorChar;
+
+        public static string AppPath = (Assembly.GetEntryAssembly() != null ? Path.GetDirectoryName(Assembly.GetEntryAssembly().Location) : "") +
+                                       Path.DirectorySeparatorChar;
         public static string DataPath = AppPath + "Data" + Path.DirectorySeparatorChar;
 
         // Used for all single-byte string encodings.
@@ -95,7 +97,7 @@ namespace WillowTree
             System.Diagnostics.Debug.Assert(inBytes != null, "inBytes != null");
             System.Diagnostics.Debug.Assert(inBytes.Length >= fieldSize, "inBytes.Length >= fieldSize");
 
-            byte[] outBytes = new byte[fieldSize];
+            var outBytes = new byte[fieldSize];
             Buffer.BlockCopy(inBytes, 0, outBytes, 0, fieldSize);
 
             if (BitConverter.IsLittleEndian)
@@ -112,25 +114,25 @@ namespace WillowTree
             return outBytes;
         }
 
-        private static float ReadSingle(BinaryReader reader, ByteOrder Endian)
+        private static float ReadSingle(BinaryReader reader, ByteOrder endian)
         {
-            return BitConverter.ToSingle(ReadBytes(reader, sizeof(float), Endian), 0);
+            return BitConverter.ToSingle(ReadBytes(reader, sizeof(float), endian), 0);
         }
-        private static int ReadInt32(BinaryReader reader, ByteOrder Endian)
+        private static int ReadInt32(BinaryReader reader, ByteOrder endian)
         {
-            return BitConverter.ToInt32(ReadBytes(reader, sizeof(int), Endian), 0);
+            return BitConverter.ToInt32(ReadBytes(reader, sizeof(int), endian), 0);
         }
-        private static short ReadInt16(BinaryReader reader, ByteOrder Endian)
+        private static short ReadInt16(BinaryReader reader, ByteOrder endian)
         {
-            return BitConverter.ToInt16(ReadBytes(reader, sizeof(short), Endian), 0);
+            return BitConverter.ToInt16(ReadBytes(reader, sizeof(short), endian), 0);
         }
-        private static List<int> ReadListInt32(BinaryReader reader, ByteOrder Endian)
+        private static List<int> ReadListInt32(BinaryReader reader, ByteOrder endian)
         {
-            int count = ReadInt32(reader, Endian);
-            List<int> list = new List<int>(count);
-            for (int i = 0; i < count; i++)
+            var count = ReadInt32(reader, endian);
+            var list = new List<int>(count);
+            for (var i = 0; i < count; i++)
             {
-                int value = ReadInt32(reader, Endian);
+                var value = ReadInt32(reader, endian);
                 list.Add(value);
             }
             return list;
@@ -144,19 +146,19 @@ namespace WillowTree
         {
             writer.Write(BitConverter.ToInt32(ReadBytes(BitConverter.GetBytes(value), sizeof(int), endian), 0));
         }
-        private static void Write(BinaryWriter writer, short value, ByteOrder Endian)
+        private static void Write(BinaryWriter writer, short value, ByteOrder endian)
         {
-            writer.Write(ReadBytes(BitConverter.GetBytes((short)value), sizeof(short), Endian));
+            writer.Write(ReadBytes(BitConverter.GetBytes(value), sizeof(short), endian));
         }
 
-        private static byte[] GetBytesFromInt(int value, ByteOrder Endian)
+        private static byte[] GetBytesFromInt(int value, ByteOrder endian)
         {
-            return ReadBytes(BitConverter.GetBytes(value), sizeof(int), Endian);
+            return ReadBytes(BitConverter.GetBytes(value), sizeof(int), endian);
         }
 
-        private static byte[] GetBytesFromInt(uint value, ByteOrder Endian)
+        private static byte[] GetBytesFromInt(uint value, ByteOrder endian)
         {
-            return ReadBytes(BitConverter.GetBytes(value), sizeof(int), Endian);
+            return ReadBytes(BitConverter.GetBytes(value), sizeof(int), endian);
         }
 
         ///<summary>Reads a string in the format used by the WSGs</summary>
@@ -270,6 +272,7 @@ namespace WillowTree
                 }
                 else
                 {
+                    Console.WriteLine("Value :" + value);
                     //Found String put the file cursor just before 
                     reader.BaseStream.Position = position;
                     break;
@@ -289,7 +292,7 @@ namespace WillowTree
                 return;
             }
 
-            bool requiresUnicode = isUnicode(value);
+            bool requiresUnicode = IsUnicode(value);
             // Generate the bytes (either single-byte or Unicode, depending on input).
             if (!requiresUnicode)
             {
@@ -325,7 +328,7 @@ namespace WillowTree
                 return bytes.ToArray();
             }
 
-            bool requiresUnicode = isUnicode(value);
+            bool requiresUnicode = IsUnicode(value);
             // Generate the bytes (either single-byte or Unicode, depending on input).
             if (!requiresUnicode)
             {
@@ -339,7 +342,7 @@ namespace WillowTree
                 {
                     bytes.Add(b);
                 }
-                bytes.Add((byte)0);
+                bytes.Add(0);
             }
             else
             {
@@ -353,26 +356,26 @@ namespace WillowTree
                 {
                     bytes.Add(b);
                 }
-                bytes.Add((byte)0);
-                bytes.Add((byte)0);
+                bytes.Add(0);
+                bytes.Add(0);
             }
             return bytes.ToArray();
         }
         /// <summary> Look for any non-ASCII characters in the input.</summary>
-        private static bool isUnicode(string value)
+        private static bool IsUnicode(string value)
         {
-            for (int i = 0; i < value.Length; i++)
-                if (value[i] > 256)
+            foreach (var t in value)
+                if (t > 256)
                     return true;
 
             return false;
         }
 
-        #region Members
-        public ByteOrder EndianWSG;
+#region Members
+        public ByteOrder EndianWsg;
 
         public string Platform;
-        public string OpenedWSG;
+        public string OpenedWsg;
         public bool ContainsRawData;
         // Whether WSG should try to automatically repair or discard any invalid data
         // to recover from an invalid state.  This will allow partial data loss but 
@@ -383,8 +386,10 @@ namespace WillowTree
         //General Info
         public string MagicHeader;
         public int VersionNumber;
-        public string PLYR;
+        public string Plyr;
         public int RevisionNumber;
+        public static int ExportValuesCount;
+        public static int BankValuesCount;
         public string Class;
         public int Level;
         public int Experience;
@@ -415,22 +420,23 @@ namespace WillowTree
 
         //Delegate for read String and Value
         public delegate List<string> ReadStringsFunction(BinaryReader reader, ByteOrder bo);
-        public delegate List<int> ReadValuesFunction(BinaryReader reader, ByteOrder bo);
-
-        public class RawDataInfo
-        {
-            public byte[] data = new byte[0];
-            public int nextValue;
-        }
+        public delegate List<int> ReadValuesFunction(BinaryReader reader, ByteOrder bo, int revisionNumber);
 
         public class Object
         {
             public List<string> Strings = new List<string>();
             public List<int> Values = new List<int>();
-            public byte[] Paddings;
 
-            public ReadStringsFunction readStrings = null;
-            public ReadValuesFunction readValues = ReadObjectValues;
+            public ReadStringsFunction ReadStrings;
+            public ReadValuesFunction ReadValues = ReadObjectValues;
+
+            public void PrintParts()
+            {
+                foreach (var part in Strings)
+                {
+                    Console.WriteLine(part);
+                }
+            }
 
             public int Quality
             {
@@ -447,13 +453,25 @@ namespace WillowTree
                 get { return Values[3]; }
                 set { Values[3] = value; }
             }
+
+            public int Junk
+            {
+                get { return Values[4]; }
+                set { Values[4] = value; }
+            }
+
+            public int Locked
+            {
+                get { return Values[5]; }
+                set { Values[5] = value; }
+            }
         }
         public class Item : Object
         {
 
             public Item()
             {
-                readStrings = ReadItemStrings;
+                ReadStrings = ReadItemStrings;
             }
 
             public int Quantity
@@ -467,7 +485,7 @@ namespace WillowTree
 
             public Weapon()
             {
-                readStrings = ReadWeaponStrings;
+                ReadStrings = ReadWeaponStrings;
             }
 
             public int Ammo
@@ -496,15 +514,15 @@ namespace WillowTree
             public Byte TypeId;
             public Int32 Value;
         }
-        List<ChallengeDataEntry> Challenges;
+        List<ChallengeDataEntry> _challenges;
 
         public byte[] ChallengeData;
         public int TotalLocations;
         public string[] LocationStrings;
         public string CurrentLocation;
-        public int[] SaveInfo1to5 = new int[5];
+        public int[] SaveInfo1To5 = new int[5];
         public int SaveNumber;
-        public int[] SaveInfo7to10 = new int[4];
+        public int[] SaveInfo7To10 = new int[4];
 
         public struct QuestObjective
         {
@@ -516,8 +534,8 @@ namespace WillowTree
         {
             public string Name;
             public int Progress;
-            public int DLCValue1;
-            public int DLCValue2;
+            public int DlcValue1;
+            public int DlcValue2;
             public int NumberOfObjectives;
             public QuestObjective[] Objectives;
         }
@@ -563,8 +581,8 @@ namespace WillowTree
         public class EchoEntry
         {
             public string Name;
-            public int DLCValue1;
-            public int DLCValue2;
+            public int DlcValue1;
+            public int DlcValue2;
         }
         public class EchoTable
         {
@@ -583,7 +601,7 @@ namespace WillowTree
 
         public byte[] Unknown3; //80 bytes of 00 at the end 
 
-        public class DLC_Data
+        public class DlcData
         {
             public const int Section1Id = 0x43211234;
             public const int Section2Id = 0x02151984;
@@ -595,34 +613,29 @@ namespace WillowTree
             public bool HasSection3;
             public bool HasSection4;
 
-            public List<DLCSection> DataSections;
+            public List<DlcSection> DataSections;
 
-            public int DLC_Size;
+            public int DlcSize;
 
             // DLC Section 1 Data (bank data)
-            public byte DLC_Unknown1;  // Read only flag. Always resets to 1 in ver 1.41.  Probably CanAccessBank.
+            public byte DlcUnknown1;  // Read only flag. Always resets to 1 in ver 1.41.  Probably CanAccessBank.
             public int BankSize;
             public List<BankEntry> BankInventory = new List<BankEntry>();
             // DLC Section 2 Data (don't know)
-            public int DLC_Unknown2; // All four of these are boolean flags.
-            public int DLC_Unknown3; // If you set them to any value except 0
-            public int DLC_Unknown4; // the game will rewrite them as 1.
-            public int SkipDLC2Intro; //
+            public int DlcUnknown2; // All four of these are boolean flags.
+            public int DlcUnknown3; // If you set them to any value except 0
+            public int DlcUnknown4; // the game will rewrite them as 1.
+            public int SkipDlc2Intro; //
             // DLC Section 3 Data (related to the level cap.  removing this section will delevel your character to 50)
-            public byte DLC_Unknown5;  // Read only flag. Always resets to 1 in ver 1.41.  Probably CanExceedLevel50
+            public byte DlcUnknown5;  // Read only flag. Always resets to 1 in ver 1.41.  Probably CanExceedLevel50
             // DLC Section 4 Data (DLC backpack)
             public byte SecondaryPackEnabled;  // Read only flag. Always resets to 1 in ver 1.41.
-            public int NumberOfItems;
-            public List<List<string>> ItemStrings = new List<List<string>>();
-            public List<List<int>> ItemValues = new List<List<int>>();
             public int NumberOfWeapons;
-            public List<List<string>> WeaponStrings = new List<List<string>>();
-            public List<List<int>> WeaponValues = new List<List<int>>();
         }
 
-        public DLC_Data DLC = new DLC_Data();
+        public DlcData Dlc = new DlcData();
 
-        public class DLCSection
+        public class DlcSection
         {
             public int Id;
             public byte[] RawData;
@@ -630,34 +643,34 @@ namespace WillowTree
         }
 
         //Xbox 360 only
-        public long ProfileID;
-        public byte[] DeviceID;
-        public byte[] CON_Image;
-        public string Title_Display;
-        public string Title_Package;
-        public uint TitleID = 1414793191;
-        #endregion
+        public long ProfileId;
+        public byte[] DeviceId;
+        public byte[] ConImage;
+        public string TitleDisplay;
+        public string TitlePackage;
+        public uint TitleId = 1414793191;
+#endregion
 
 
-        public static uint GetXboxTitleID(Stream inputWSG)
+        public static uint GetXboxTitleId(Stream inputWsg)
         {
-            BinaryReader br = new BinaryReader(inputWSG);
-            byte[] fileInMemory = br.ReadBytes((int)inputWSG.Length);
-            if (fileInMemory.Count() != inputWSG.Length)
+            BinaryReader br = new BinaryReader(inputWsg);
+            byte[] fileInMemory = br.ReadBytes((int)inputWsg.Length);
+            if (fileInMemory.Count() != inputWsg.Length)
                 throw new EndOfStreamException();
 
             try
             {
-                STFSPackage CON = new STFSPackage(new DJsIO(fileInMemory, true), new X360.Other.LogRecord());
-                return CON.Header.TitleID;
+                STFSPackage con = new STFSPackage(new DJsIO(fileInMemory, true), new X360.Other.LogRecord());
+                return con.Header.TitleID;
             }
             catch { return 0; }
         }
 
         ///<summary>Reports back the expected platform this WSG was created on.</summary>
-        public static string WSGType(Stream inputWSG)
+        public static string WsgType(Stream inputWsg)
         {
-            BinaryReader saveReader = new BinaryReader(inputWSG);
+            BinaryReader saveReader = new BinaryReader(inputWsg);
 
             byte byte1 = saveReader.ReadByte();
             byte byte2 = saveReader.ReadByte();
@@ -676,12 +689,12 @@ namespace WillowTree
                     if (byte1 == 'W' && byte2 == 'S' && byte3 == 'G')
                     {
                         saveReader.BaseStream.Seek(0x360, SeekOrigin.Begin);
-                        uint titleID = ((uint)saveReader.ReadByte() << 24) + ((uint)saveReader.ReadByte() << 16) +
-                            ((uint)saveReader.ReadByte() << 8) + (uint)saveReader.ReadByte();
+                        uint titleId = ((uint)saveReader.ReadByte() << 24) + ((uint)saveReader.ReadByte() << 16) +
+                            ((uint)saveReader.ReadByte() << 8) + saveReader.ReadByte();
 
 
 //                        uint titleID = GetXboxTitleID(inputWSG);
-                        switch (titleID) 
+                        switch (titleId) 
                         {
                             case 1414793191: return "X360";
                             case 1414793318: return "X360JP";
@@ -708,290 +721,225 @@ namespace WillowTree
                         return "unknown";
                 }
 
-                if (littleEndian)
-                    return "PC";
-                else
-                    return "PS3";
+                return littleEndian ? "PC" : "PS3";
             }
 
             return "Not WSG";
         }
 
         ///<summary>Extracts a WSG from a CON (Xbox 360 Container File).</summary>
-        public MemoryStream OpenXboxWSGStream(Stream InputX360File)
+        public MemoryStream OpenXboxWsgStream(Stream inputX360File)
         {
-            BinaryReader br = new BinaryReader(InputX360File);
-            byte[] fileInMemory = br.ReadBytes((int)InputX360File.Length);
-            if (fileInMemory.Count() != InputX360File.Length)
+            BinaryReader br = new BinaryReader(inputX360File);
+            byte[] fileInMemory = br.ReadBytes((int)inputX360File.Length);
+            if (fileInMemory.Count() != inputX360File.Length)
                 throw new EndOfStreamException();
 
             try
             {
-                STFSPackage CON = new STFSPackage(new DJsIO(fileInMemory, true), new X360.Other.LogRecord());
+                STFSPackage con = new STFSPackage(new DJsIO(fileInMemory, true), new X360.Other.LogRecord());
                 //DJsIO Extract = new DJsIO(true);
                 //CON.FileDirectory[0].Extract(Extract);
-                ProfileID = CON.Header.ProfileID;
-                DeviceID = CON.Header.DeviceID;
+                ProfileId = con.Header.ProfileID;
+                DeviceId = con.Header.DeviceID;
                 
                 //DJsIO Save = new DJsIO("C:\\temp.sav", DJFileMode.Create, true);
                 //Save.Write(Extract.ReadStream());
                 //Save.Close();
                 //byte[] nom = CON.GetFile("SaveGame.sav").GetEntryData(); 
-                return new MemoryStream(CON.GetFile("SaveGame.sav").GetTempIO(true).ReadStream(), false);
+                return new MemoryStream(con.GetFile("SaveGame.sav").GetTempIO(true).ReadStream(), false);
             }
             catch
             {
                 try
                 {
-                    DJsIO Manual = new DJsIO(fileInMemory, true);
-                    Manual.ReadBytes(881);
-                    ProfileID = Manual.ReadInt64();
-                    Manual.ReadBytes(132);
-                    DeviceID = Manual.ReadBytes(20);
-                    Manual.ReadBytes(48163);
-                    int size = Manual.ReadInt32();
-                    Manual.ReadBytes(4040);
-                    return new MemoryStream(Manual.ReadBytes(size), false);
+                    DJsIO manual = new DJsIO(fileInMemory, true);
+                    manual.ReadBytes(881);
+                    ProfileId = manual.ReadInt64();
+                    manual.ReadBytes(132);
+                    DeviceId = manual.ReadBytes(20);
+                    manual.ReadBytes(48163);
+                    int size = manual.ReadInt32();
+                    manual.ReadBytes(4040);
+                    return new MemoryStream(manual.ReadBytes(size), false);
                 }
                 catch { return null; }
             }
         }
 
         ///<summary>Reads savegame data from a file</summary>
-        public void LoadWSG(string inputFile)
+        public void LoadWsg(string inputFile)
         {
             using (FileStream fileStream = new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                Platform = WSGType(fileStream);
+                Platform = WsgType(fileStream);
                 fileStream.Seek(0, SeekOrigin.Begin);
 
                 if (string.Equals(Platform, "X360", StringComparison.Ordinal) ||
                     string.Equals(Platform, "X360JP", StringComparison.Ordinal))
                 {
-                    using (MemoryStream x360FileStream = OpenXboxWSGStream(fileStream))
+                    using (MemoryStream x360FileStream = OpenXboxWsgStream(fileStream))
                     {
-                        ReadWSG(x360FileStream);
+                        ReadWsg(x360FileStream);
                     }
                 }
                 else if (string.Equals(Platform, "PS3", StringComparison.Ordinal) ||
                     string.Equals(Platform, "PC", StringComparison.Ordinal))
                 {
-                    ReadWSG(fileStream);
+                    ReadWsg(fileStream);
                 }
                 else
                 {
                     throw new FileFormatException("Input file is not a WSG (platform is " + Platform + ").");
                 }
 
-                OpenedWSG = inputFile;
+                OpenedWsg = inputFile;
             }
         }
-
+        
         private void BuildXboxPackage(string packageFileName, string saveFileName, int locale)
         {
-            CreateSTFS Package = new CreateSTFS();
+            CreateSTFS package = new CreateSTFS();
 
-            Package.STFSType = STFSType.Type1;
-            Package.HeaderData.ProfileID = this.ProfileID;
-            Package.HeaderData.DeviceID = this.DeviceID;
+            package.STFSType = STFSType.Type1;
+            package.HeaderData.ProfileID = ProfileId;
+            package.HeaderData.DeviceID = DeviceId;
 
             Assembly newAssembly = Assembly.GetExecutingAssembly();
             // WARNING: GetManifestResourceStream is case-sensitive.
-            Stream WT_Icon = newAssembly.GetManifestResourceStream("WillowTree.Resources.WT_CON.png");
-            Package.HeaderData.ContentImage = System.Drawing.Image.FromStream(WT_Icon);
-            Package.HeaderData.PackageImage = Package.HeaderData.ContentImage;
-            Package.HeaderData.Title_Display = this.CharacterName + " - Level " + this.Level + " - " + CurrentLocation;
-            Package.HeaderData.Title_Package = "Borderlands";
+            Stream wtIcon = newAssembly.GetManifestResourceStream("WillowTree.Resources.WT_CON.png");
+            package.HeaderData.ContentImage = System.Drawing.Image.FromStream(wtIcon ?? throw new NoNullAllowedException("wtIcon don't found."));
+            package.HeaderData.PackageImage = package.HeaderData.ContentImage;
+            package.HeaderData.Title_Display = CharacterName + " - Level " + Level + " - " + CurrentLocation;
+            package.HeaderData.Title_Package = "Borderlands";
             switch (locale)
             {
                 case 1: // US or International version
-                    Package.HeaderData.Title_Package = "Borderlands";
-                    Package.HeaderData.TitleID = 1414793191;
+                    package.HeaderData.Title_Package = "Borderlands";
+                    package.HeaderData.TitleID = 1414793191;
                     break;                   
                 case 2: // JP version
-                    Package.HeaderData.Title_Package = "Borderlands (JP)";
-                    Package.HeaderData.TitleID = 1414793318;
+                    package.HeaderData.Title_Package = "Borderlands (JP)";
+                    package.HeaderData.TitleID = 1414793318;
                     break;
             }
-            Package.AddFile(saveFileName, "SaveGame.sav");
+            package.AddFile(saveFileName, "SaveGame.sav");
 
 
-            STFSPackage CON = new STFSPackage(Package, new RSAParams(DataPath + "KV.bin"), packageFileName, new X360.Other.LogRecord());
+            STFSPackage con = new STFSPackage(package, new RSAParams(DataPath + "KV.bin"), packageFileName, new X360.Other.LogRecord());
 
-            CON.FlushPackage(new RSAParams(DataPath + "KV.bin"));
-            CON.CloseIO();
-            WT_Icon.Close();
-        }
-
-        private enum PADDINGTYPE
-        {
-            BYTE,
-            INT16,
-            INT32,
-            LONG,
-            UNKNOWN
-        }
-
-        private PADDINGTYPE GetPaddingTypeFromSize(int size)
-        {
-            switch (size)
-            {
-                case 1:
-                    return PADDINGTYPE.BYTE;
-                case sizeof(Int16):
-                    return PADDINGTYPE.INT16;
-                case sizeof(Int32):
-                    return PADDINGTYPE.INT32;
-                case sizeof(long):
-                    return PADDINGTYPE.LONG;
-                default:
-                    return PADDINGTYPE.UNKNOWN;
-            }
-        }
-
-        private RawDataInfo CheckPadding(BinaryReader reader, int paddingSize)
-        {
-            var paddingType = GetPaddingTypeFromSize(paddingSize); 
-            var rd = new RawDataInfo();
-            if (paddingType == PADDINGTYPE.UNKNOWN)
-                return rd;
-            int count = -paddingSize;
-            bool findString = false;
-            while (!findString && rd.data.Length < sizeof(int) * 2)
-            {
-                var d = ReadBytes(reader, paddingSize > 4 ? 4 : paddingSize, EndianWSG);
-
-                long extraPaddingData = 0;
-                switch (paddingType)
-                {
-                    case PADDINGTYPE.BYTE:
-                        //Looking for non null byte
-                        extraPaddingData = d[0];
-                        rd.nextValue = d[0];
-                        if (extraPaddingData != 0)
-                        {
-                            reader.BaseStream.Position -= paddingSize;
-                            findString = true;
-                        }
-                        else
-                        {
-                            rd.data = rd.data.Concat(d).ToArray();
-                        }
-                        break;
-                    case PADDINGTYPE.INT16:
-                        extraPaddingData = BitConverter.ToInt16(ReadBytes(d, sizeof(Int16), EndianWSG), 0);
-                        break;
-                    case PADDINGTYPE.INT32:
-                    case PADDINGTYPE.LONG:
-                        //Looking for next string
-                        rd.nextValue = BitConverter.ToInt32(ReadBytes(d, sizeof(int), EndianWSG), 0);
-                        extraPaddingData = rd.nextValue;
-                        //There is not item smaller or langer than this
-                        if (extraPaddingData != 0)
-                        {
-                            reader.BaseStream.Position -= 4;
-                            findString = true;
-                        }
-                        else
-                        {
-                            rd.data = rd.data.Concat(d).ToArray();
-                        }
-                        break;
-                    default:
-                        return rd;
-                }
-                
-            }
-            return rd;
+            con.FlushPackage(new RSAParams(DataPath + "KV.bin"));
+            con.CloseIO();
+            wtIcon.Close();
         }
 
         private static List<string> ReadItemStrings(BinaryReader reader, ByteOrder bo)
         {
             List<string> strings = new List<string>();
-            for (int TotalStrings = 0; TotalStrings < 9; TotalStrings++)
+            for (int totalStrings = 0; totalStrings < 9; totalStrings++)
                 strings.Add(ReadString(reader, bo));
+            foreach (var item in strings)
+            {
+                Console.WriteLine(item);
+            }
             return strings;
         }
 
         private static List<string> ReadWeaponStrings(BinaryReader reader, ByteOrder bo)
         {
             List<string> strings = new List<string>();
-            for (int TotalStrings = 0; TotalStrings < 14; TotalStrings++)
+            for (int totalStrings = 0; totalStrings < 14; totalStrings++)
                 strings.Add(ReadString(reader, bo));
+            foreach (var item in strings)
+            {
+                Console.WriteLine(item);
+            }
             return strings;
         }
 
-        private static List<int> ReadObjectValues(BinaryReader reader, ByteOrder bo)
+        private static List<int> ReadObjectValues(BinaryReader reader, ByteOrder bo, int revisionNumber)
         {
-            List<int> values = new List<int>();
-            Int32 Value1 = ReadInt32(reader, bo);
+            Int32 ammoQuantityCount = ReadInt32(reader, bo);
             UInt32 tempLevelQuality = (UInt32)ReadInt32(reader, bo);
-            Int16 Quality = (Int16)(tempLevelQuality % (UInt32)65536);
-            Int16 Level = (Int16)(tempLevelQuality / (UInt32)65536);
-            Int32 EquippedSlot = ReadInt32(reader, bo);
+            Int16 quality = (Int16)(tempLevelQuality % 65536);
+            Int16 level = (Int16)(tempLevelQuality / 65536);
+            Int32 equippedSlot = ReadInt32(reader, bo);
 
-            values.Add(Value1);
-            values.Add(Quality);
-            values.Add(EquippedSlot);
-            values.Add(Level);
+            var values = new List<int>() {
+                ammoQuantityCount,
+                quality,
+                equippedSlot,
+                level
+            };
+
+            if (revisionNumber <= 26) return values;
+            Int32 junk = ReadInt32(reader, bo);
+            Int32 locked = ReadInt32(reader, bo);
+            Console.WriteLine(locked);
+            if (locked != 0 && locked != 1)
+            {
+                reader.BaseStream.Position -= 4;
+                values.Add(0);
+            }
+            else
+                values.Add(junk);
+            if (locked != 0 && locked != 1)
+            {
+                reader.BaseStream.Position -= 4;
+                values.Add(0);
+            }
+            else
+                values.Add(locked);
+
             return values;
         }
 
-        private T ReadObject<T>(BinaryReader reader, ref RawDataInfo rd, int paddingSize, bool isDLC) where T : Object, new()
+        private T ReadObject<T>(BinaryReader reader) where T : Object, new()
         {
             var item = new T();
-            item.Strings = item.readStrings(reader, EndianWSG);
-            item.Values = item.readValues(reader, EndianWSG);
+            item.Strings = item.ReadStrings(reader, EndianWsg);
+            item.Values = item.ReadValues(reader, EndianWsg, RevisionNumber);
             return item;
         }
 
-        private void ReadObjects<T>(BinaryReader reader, ref List<T> Objects, int groupSize, int paddingSize, bool isDLC) where T : Object, new()
+        private void ReadObjects<T>(BinaryReader reader, ref List<T> objects, int groupSize) where T : Object, new()
         {
-            RawDataInfo rd = null;
-            for (int Progress = 0; Progress < groupSize; Progress++)
+            for (int progress = 0; progress < groupSize; progress++)
             {
-                var item = ReadObject<T>(reader, ref rd, paddingSize, isDLC);
-
-                if (Progress < groupSize - 1)
-                {
-                    item.Paddings = SearchForString(reader, EndianWSG).ToArray();
-                }
-                else
-                {
-                    item.Paddings = CheckPadding(reader, sizeof(int)).data;
-                }
-                Objects.Add(item);
+                Console.WriteLine(progress + "/" + groupSize);
+                var item = ReadObject<T>(reader);
+                objects.Add(item);
             }
         }
 
-        public void SaveWSG(string filename)
+        public void SaveWsg(string filename)
         {
-            if (this.Platform == "PS3" || this.Platform == "PC")
+            if (Platform == "PS3" || Platform == "PC")
             {
-                using (BinaryWriter Save = new BinaryWriter(new FileStream(filename, FileMode.Create)))
+                using (BinaryWriter save = new BinaryWriter(new FileStream(filename, FileMode.Create)))
                 {
-                    Save.Write(this.WriteWSG());
+                    save.Write(WriteWsg());
                 }
             }
 
-            else if (this.Platform == "X360")
+            else if (Platform == "X360")
             {
                 string tempSaveName = filename + ".temp";
-                using (BinaryWriter Save = new BinaryWriter(new FileStream(tempSaveName, FileMode.Create)))
+                using (BinaryWriter save = new BinaryWriter(new FileStream(tempSaveName, FileMode.Create)))
                 {
-                    Save.Write(this.WriteWSG());
+                    save.Write(WriteWsg());
                 }
 
                 BuildXboxPackage(filename, tempSaveName, 1);
                 File.Delete(tempSaveName);
             }
 
-            else if (this.Platform == "X360JP")
+            else if (Platform == "X360JP")
             {
                 string tempSaveName = filename + ".temp";
-                using (BinaryWriter Save = new BinaryWriter(new FileStream(tempSaveName, FileMode.Create)))
+                using (BinaryWriter save = new BinaryWriter(new FileStream(tempSaveName, FileMode.Create)))
                 {
-                    Save.Write(this.WriteWSG());
+                    save.Write(WriteWsg());
                 }
 
                 BuildXboxPackage(filename, tempSaveName, 2);
@@ -1000,153 +948,164 @@ namespace WillowTree
 
         }
 
-        private static bool EOF(BinaryReader binaryReader)
+        private static bool Eof(BinaryReader binaryReader)
         {
             var bs = binaryReader.BaseStream;
             return (bs.Position == bs.Length);
         }
 
         ///<summary>Read savegame data from an open stream</summary>
-        public void ReadWSG(Stream fileStream)
+        public void ReadWsg(Stream fileStream)
         {
-            BinaryReader TestReader = new BinaryReader(fileStream, Encoding.ASCII);
+            BinaryReader testReader = new BinaryReader(fileStream, Encoding.ASCII);
 
             ContainsRawData = false;
             RequiredRepair = false;
-            MagicHeader = new string(TestReader.ReadChars(3));
-            VersionNumber = TestReader.ReadInt32();
+            MagicHeader = new string(testReader.ReadChars(3));
+            VersionNumber = testReader.ReadInt32();
 
             if (VersionNumber == 2)
-                EndianWSG = ByteOrder.LittleEndian;
+                EndianWsg = ByteOrder.LittleEndian;
             else if (VersionNumber == 0x02000000)
             {
                 VersionNumber = 2;
-                EndianWSG = ByteOrder.BigEndian;
+                EndianWsg = ByteOrder.BigEndian;
             }
             else
                 throw new FileFormatException("WSG version number does match any known version (" + VersionNumber + ").");
          
-            PLYR = new string(TestReader.ReadChars(4));
-            if (!string.Equals(PLYR, "PLYR", StringComparison.Ordinal))
+            Plyr = new string(testReader.ReadChars(4));
+            if (!string.Equals(Plyr, "PLYR", StringComparison.Ordinal))
                 throw new FileFormatException("Player header does not match expected value.");
 
-            RevisionNumber = ReadInt32(TestReader, EndianWSG);
-            Class = ReadString(TestReader, EndianWSG);
-            Level = ReadInt32(TestReader, EndianWSG);
-            Experience = ReadInt32(TestReader, EndianWSG);
-            SkillPoints = ReadInt32(TestReader, EndianWSG);
-            Unknown1 = ReadInt32(TestReader, EndianWSG);
-            Cash = ReadInt32(TestReader, EndianWSG);
-            FinishedPlaythrough1 = ReadInt32(TestReader, EndianWSG);
-            NumberOfSkills = ReadSkills(TestReader, EndianWSG);
-            Vehi1Color = ReadInt32(TestReader, EndianWSG);
-            Vehi2Color = ReadInt32(TestReader, EndianWSG);
-            Vehi1Type = ReadInt32(TestReader, EndianWSG);
-            Vehi2Type = ReadInt32(TestReader, EndianWSG);
-            NumberOfPools = ReadAmmo(TestReader, EndianWSG);
-            ReadObjects(TestReader, ref Items, ReadInt32(TestReader, EndianWSG), sizeof(int) * 2, false);
-            BackpackSize = ReadInt32(TestReader, EndianWSG);
-            EquipSlots = ReadInt32(TestReader, EndianWSG);
-            ReadObjects(TestReader, ref Weapons, ReadInt32(TestReader, EndianWSG), sizeof(int) * 2, false);
+            RevisionNumber = ReadInt32(testReader, EndianWsg);
+            ExportValuesCount = RevisionNumber > 26 ? 6 : 4;
+            Class = ReadString(testReader, EndianWsg);
+            Level = ReadInt32(testReader, EndianWsg);
+            Experience = ReadInt32(testReader, EndianWsg);
+            SkillPoints = ReadInt32(testReader, EndianWsg);
+            Unknown1 = ReadInt32(testReader, EndianWsg);
+            Cash = ReadInt32(testReader, EndianWsg);
+            FinishedPlaythrough1 = ReadInt32(testReader, EndianWsg);
+            NumberOfSkills = ReadSkills(testReader, EndianWsg);
+            Vehi1Color = ReadInt32(testReader, EndianWsg);
+            Vehi2Color = ReadInt32(testReader, EndianWsg);
+            Vehi1Type = ReadInt32(testReader, EndianWsg);
+            Vehi2Type = ReadInt32(testReader, EndianWsg);
+            NumberOfPools = ReadAmmo(testReader, EndianWsg);
+            Console.WriteLine(@"====== ENTER ITEM ======");
+            ReadObjects(testReader, ref Items, ReadInt32(testReader, EndianWsg));
+            Console.WriteLine(@"====== EXIT ITEM ======");
+            BackpackSize = ReadInt32(testReader, EndianWsg);
+            EquipSlots = ReadInt32(testReader, EndianWsg);
+            Console.WriteLine(@"====== ENTER WEAPON ======");
+            ReadObjects(testReader, ref Weapons, ReadInt32(testReader, EndianWsg));
+            Console.WriteLine(@"====== EXIT WEAPON ======");
 
-            ChallengeDataBlockLength = ReadInt32(TestReader, EndianWSG);
-            byte[] challengeDataBlock = TestReader.ReadBytes(ChallengeDataBlockLength);
+            ChallengeDataBlockLength = ReadInt32(testReader, EndianWsg);
+            byte[] challengeDataBlock = testReader.ReadBytes(ChallengeDataBlockLength);
             if (challengeDataBlock.Length != ChallengeDataBlockLength)
                 throw new EndOfStreamException();
 
             using (BinaryReader challengeReader = new BinaryReader(new MemoryStream(challengeDataBlock, false), Encoding.ASCII))
             {
-                ChallengeDataBlockId = ReadInt32(challengeReader, EndianWSG);
-                ChallengeDataLength = ReadInt32(challengeReader, EndianWSG);
-                ChallengeDataEntries = ReadInt16(challengeReader, EndianWSG);
-                Challenges = new List<ChallengeDataEntry>();
+                ChallengeDataBlockId = ReadInt32(challengeReader, EndianWsg);
+                ChallengeDataLength = ReadInt32(challengeReader, EndianWsg);
+                ChallengeDataEntries = ReadInt16(challengeReader, EndianWsg);
+                _challenges = new List<ChallengeDataEntry>();
                 for (int i = 0; i < ChallengeDataEntries; i++)
                 {
                     ChallengeDataEntry challenge;
-                    challenge.Id = ReadInt16(challengeReader, EndianWSG);
+                    challenge.Id = ReadInt16(challengeReader, EndianWsg);
                     challenge.TypeId = challengeReader.ReadByte();
-                    challenge.Value = ReadInt32(challengeReader, EndianWSG);
-                    Challenges.Add(challenge);
+                    challenge.Value = ReadInt32(challengeReader, EndianWsg);
+                    _challenges.Add(challenge);
                 }
             }
 
-            TotalLocations = ReadLocations(TestReader, EndianWSG);
-            CurrentLocation = ReadString(TestReader, EndianWSG);
-            SaveInfo1to5[0] = ReadInt32(TestReader, EndianWSG);
-            SaveInfo1to5[1] = ReadInt32(TestReader, EndianWSG);
-            SaveInfo1to5[2] = ReadInt32(TestReader, EndianWSG);
-            SaveInfo1to5[3] = ReadInt32(TestReader, EndianWSG);
-            SaveInfo1to5[4] = ReadInt32(TestReader, EndianWSG);
-            SaveNumber = ReadInt32(TestReader, EndianWSG);
-            SaveInfo7to10[0] = ReadInt32(TestReader, EndianWSG);
-            SaveInfo7to10[1] = ReadInt32(TestReader, EndianWSG);
-            NumberOfQuestLists = ReadQuests(TestReader, EndianWSG);
+            TotalLocations = ReadLocations(testReader, EndianWsg);
+            CurrentLocation = ReadString(testReader, EndianWsg);
+            SaveInfo1To5[0] = ReadInt32(testReader, EndianWsg);
+            SaveInfo1To5[1] = ReadInt32(testReader, EndianWsg);
+            SaveInfo1To5[2] = ReadInt32(testReader, EndianWsg);
+            SaveInfo1To5[3] = ReadInt32(testReader, EndianWsg);
+            SaveInfo1To5[4] = ReadInt32(testReader, EndianWsg);
+            SaveNumber = ReadInt32(testReader, EndianWsg);
+            SaveInfo7To10[0] = ReadInt32(testReader, EndianWsg);
+            SaveInfo7To10[1] = ReadInt32(testReader, EndianWsg);
+            NumberOfQuestLists = ReadQuests(testReader, EndianWsg);
 
-            TotalPlayTime = ReadInt32(TestReader, EndianWSG);
-            LastPlayedDate = ReadString(TestReader, EndianWSG); //YYYYMMDDHHMMSS
-            CharacterName = ReadString(TestReader, EndianWSG);
-            Color1 = ReadInt32(TestReader, EndianWSG); //ABGR Big (X360, PS3), RGBA Little (PC)
-            Color2 = ReadInt32(TestReader, EndianWSG); //ABGR Big (X360, PS3), RGBA Little (PC)
-            Color3 = ReadInt32(TestReader, EndianWSG); //ABGR Big (X360, PS3), RGBA Little (PC)
-            Head = ReadInt32(TestReader, EndianWSG);
+            TotalPlayTime = ReadInt32(testReader, EndianWsg);
+            LastPlayedDate = ReadString(testReader, EndianWsg); //YYYYMMDDHHMMSS
+            CharacterName = ReadString(testReader, EndianWsg);
+            Color1 = ReadInt32(testReader, EndianWsg); //ABGR Big (X360, PS3), RGBA Little (PC)
+            Color2 = ReadInt32(testReader, EndianWsg); //ABGR Big (X360, PS3), RGBA Little (PC)
+            Color3 = ReadInt32(testReader, EndianWsg); //ABGR Big (X360, PS3), RGBA Little (PC)
+            Head = ReadInt32(testReader, EndianWsg);
 
             if (RevisionNumber > 38)
             {
-                Unknown2 = ReadBytes(TestReader, 93, EndianWSG);
+                Unknown2 = ReadBytes(testReader, 93, EndianWsg);
             }
             else
             {
-                PromoCodesUsed = ReadListInt32(TestReader, EndianWSG);
-                PromoCodesRequiringNotification = ReadListInt32(TestReader, EndianWSG);
+                PromoCodesUsed = ReadListInt32(testReader, EndianWsg);
+                PromoCodesRequiringNotification = ReadListInt32(testReader, EndianWsg);
             }
-            NumberOfEchoLists = ReadEchoes(TestReader, EndianWSG);
+            NumberOfEchoLists = ReadEchoes(testReader, EndianWsg);
 
-            DLC.DataSections = new List<DLCSection>();
-            DLC.DLC_Size = ReadInt32(TestReader, EndianWSG);
-            byte[] dlcDataBlock = TestReader.ReadBytes(DLC.DLC_Size);
-            if (dlcDataBlock.Length != DLC.DLC_Size)
+            Dlc.DataSections = new List<DlcSection>();
+            Dlc.DlcSize = ReadInt32(testReader, EndianWsg);
+            byte[] dlcDataBlock = testReader.ReadBytes(Dlc.DlcSize);
+            if (dlcDataBlock.Length != Dlc.DlcSize)
                 throw new EndOfStreamException();
 
             using (BinaryReader dlcDataReader = new BinaryReader(new MemoryStream(dlcDataBlock, false), Encoding.ASCII))
             {
-                int RemainingBytes = DLC.DLC_Size;
-                while (RemainingBytes > 0)
+                int remainingBytes = Dlc.DlcSize;
+                while (remainingBytes > 0)
                 {
-                    DLCSection Section = new DLCSection();
-                    Section.Id = ReadInt32(dlcDataReader, EndianWSG);
-                    int SectionLength = ReadInt32(dlcDataReader, EndianWSG);
-                    long SectionStartPos = (int)dlcDataReader.BaseStream.Position;
-                    switch (Section.Id)
+                    DlcSection section = new DlcSection();
+                    section.Id = ReadInt32(dlcDataReader, EndianWsg);
+                    int sectionLength = ReadInt32(dlcDataReader, EndianWsg);
+                    long sectionStartPos = (int)dlcDataReader.BaseStream.Position;
+                    switch (section.Id)
                     {
-                        case DLC_Data.Section1Id: // 0x43211234
-                            DLC.HasSection1 = true;
-                            DLC.DLC_Unknown1 = dlcDataReader.ReadByte();
-                            DLC.BankSize = ReadInt32(dlcDataReader, EndianWSG);
-                            int bankEntriesCount = ReadInt32(dlcDataReader, EndianWSG);
-                            DLC.BankInventory = new List<BankEntry>();
+                        case DlcData.Section1Id: // 0x43211234
+                            Dlc.HasSection1 = true;
+                            Dlc.DlcUnknown1 = dlcDataReader.ReadByte();
+                            Dlc.BankSize = ReadInt32(dlcDataReader, EndianWsg);
+                            int bankEntriesCount = ReadInt32(dlcDataReader, EndianWsg);
+                            Dlc.BankInventory = new List<BankEntry>();
+                            Console.WriteLine(@"====== ENTER BANK ======");
+                            BankValuesCount = ExportValuesCount;
                             for (int i = 0; i < bankEntriesCount; i++)
                             {
-                                DLC.BankInventory.Add(CreateBankEntry(dlcDataReader, i == bankEntriesCount - 1 ? true : false));
+                                Console.WriteLine(i + "/" + bankEntriesCount);
+                                Dlc.BankInventory.Add(CreateBankEntry(dlcDataReader, i == bankEntriesCount - 1));
                             }
+                            Console.WriteLine(@"====== EXIT BANK ======");
                             break;
-                        case DLC_Data.Section2Id: // 0x02151984
-                            DLC.HasSection2 = true;
-                            DLC.DLC_Unknown2 = ReadInt32(dlcDataReader, EndianWSG);
-                            DLC.DLC_Unknown3 = ReadInt32(dlcDataReader, EndianWSG);
-                            DLC.DLC_Unknown4 = ReadInt32(dlcDataReader, EndianWSG);
-                            DLC.SkipDLC2Intro = ReadInt32(dlcDataReader, EndianWSG);
+                        case DlcData.Section2Id: // 0x02151984
+                            Dlc.HasSection2 = true;
+                            Dlc.DlcUnknown2 = ReadInt32(dlcDataReader, EndianWsg);
+                            Dlc.DlcUnknown3 = ReadInt32(dlcDataReader, EndianWsg);
+                            Dlc.DlcUnknown4 = ReadInt32(dlcDataReader, EndianWsg);
+                            Dlc.SkipDlc2Intro = ReadInt32(dlcDataReader, EndianWsg);
                             break;
-                        case DLC_Data.Section3Id: // 0x32235947
-                            DLC.HasSection3 = true;
-                            DLC.DLC_Unknown5 = dlcDataReader.ReadByte();
+                        case DlcData.Section3Id: // 0x32235947
+                            Dlc.HasSection3 = true;
+                            Dlc.DlcUnknown5 = dlcDataReader.ReadByte();
                             break;
-                        case DLC_Data.Section4Id: // 0x234ba901
-                            DLC.HasSection4 = true;
-                            DLC.SecondaryPackEnabled = dlcDataReader.ReadByte();
+                        case DlcData.Section4Id: // 0x234ba901
+                            Dlc.HasSection4 = true;
+                            Dlc.SecondaryPackEnabled = dlcDataReader.ReadByte();
  
                             try
                             {
-                                ReadObjects(dlcDataReader, ref Items, ReadInt32(dlcDataReader, EndianWSG), sizeof(int), true);
+                                Console.WriteLine(@"====== ENTER DLC ITEM ======");
+                                ReadObjects(dlcDataReader, ref Items, ReadInt32(dlcDataReader, EndianWsg));
+                                Console.WriteLine(@"====== EXIT DLC ITEM ======");
                             }
                             catch
                             {
@@ -1162,24 +1121,26 @@ namespace WillowTree
                                 // Make sure there's no half-processed item that only added
                                 // to ItemStrings but crashed before adding ItemValues.
                                 // Remove the excess if there is.
-                                //if (ItemStrings.Count > ItemValues.Count)
+                                //if (ItemStrings.Count > Ite.Count)
                                 //    ItemStrings.RemoveAt(ItemStrings.Count - 1);
 
                                 // Figure out how many weapons were successfully read
                                 //DLC.NumberOfWeapons = ItemStrings.Count - NumberOfItems;
-                                
+
                                 // If the data is invalid here, the whole DLC weapon list is invalid so
                                 // set its length to 0 and be done
-                                DLC.NumberOfWeapons = 0;
+                                Dlc.NumberOfWeapons = 0;
 
                                 // Skip to the end of the section to discard any raw data that is left over
-                                dlcDataReader.BaseStream.Position = SectionStartPos + SectionLength;
+                                dlcDataReader.BaseStream.Position = sectionStartPos + sectionLength;
                             }
                             //NumberOfItems += DLC.NumberOfItems;
 
                             try
                             {
-                                ReadObjects(dlcDataReader, ref Weapons, ReadInt32(dlcDataReader, EndianWSG), sizeof(int), true);
+                                Console.WriteLine(@"====== ENTER DLC WEAPON ======");
+                                ReadObjects(dlcDataReader, ref Weapons, ReadInt32(dlcDataReader, EndianWsg));
+                                Console.WriteLine(@"====== EXIT DLC WEAPON ======");
                             }
                             catch
                             {
@@ -1202,11 +1163,9 @@ namespace WillowTree
                                 //DLC.NumberOfWeapons = WeaponStrings.Count - NumberOfWeapons;
 
                                 // Skip to the end of the section to discard any raw data that is left over
-                                dlcDataReader.BaseStream.Position = SectionStartPos + SectionLength;
+                                dlcDataReader.BaseStream.Position = sectionStartPos + sectionLength;
                             }
                             //NumberOfWeapons += DLC.NumberOfWeapons;
-                            break;
-                        default:
                             break;
                     }
 
@@ -1214,45 +1173,44 @@ namespace WillowTree
                     // and store more data.  RawData stores any extra data at the end of
                     // the known data in any section and stores the entirety of sections 
                     // with unknown ids in a buffer in its raw byte order dependent form.
-                    int RawDataCount = SectionLength - (int)(dlcDataReader.BaseStream.Position - SectionStartPos);
+                    int rawDataCount = sectionLength - (int)(dlcDataReader.BaseStream.Position - sectionStartPos);
 
-                    Section.RawData = dlcDataReader.ReadBytes(RawDataCount);
-                    if (RawDataCount > 0)
+                    section.RawData = dlcDataReader.ReadBytes(rawDataCount);
+                    if (rawDataCount > 0)
                         ContainsRawData = true;
-                    RemainingBytes -= SectionLength + 8;
-                    DLC.DataSections.Add(Section);
+                    remainingBytes -= sectionLength + 8;
+                    Dlc.DataSections.Add(section);
                 }
-                if (RevisionNumber > 38)
+
+                if (RevisionNumber <= 38) return;
+                //Padding at the end of file, don't know exactly why
+                var temp = new List<byte>();
+                while (!Eof(testReader))
                 {
-                    //Padding at the end of file, don't know exactly why
-                    var temp = new List<byte>();
-                    while (!EOF(TestReader))
-                    {
-                        temp.Add(ReadBytes(TestReader, 1, EndianWSG)[0]);
-                    }
-                    Unknown3 = temp.ToArray();
+                    temp.Add(ReadBytes(testReader, 1, EndianWsg)[0]);
                 }
+                Unknown3 = temp.ToArray();
             }
         }
 
-        private int ReadEchoes(BinaryReader reader, ByteOrder EndianWSG)
+        private int ReadEchoes(BinaryReader reader, ByteOrder endianWsg)
         {
-            int echoListCount = ReadInt32(reader, EndianWSG);
+            int echoListCount = ReadInt32(reader, endianWsg);
 
             EchoLists.Clear();
             for (int i = 0; i < echoListCount; i++)
             {
                 EchoTable et = new EchoTable();
-                et.Index = ReadInt32(reader, EndianWSG);
-                et.TotalEchoes = ReadInt32(reader, EndianWSG);
+                et.Index = ReadInt32(reader, endianWsg);
+                et.TotalEchoes = ReadInt32(reader, endianWsg);
                 et.Echoes = new List<EchoEntry>();
 
                 for (int echoIndex = 0; echoIndex < et.TotalEchoes; echoIndex++)
                 {
                     EchoEntry ee = new EchoEntry();
-                    ee.Name = ReadString(reader, EndianWSG);
-                    ee.DLCValue1 = ReadInt32(reader, EndianWSG);
-                    ee.DLCValue2 = ReadInt32(reader, EndianWSG);
+                    ee.Name = ReadString(reader, endianWsg);
+                    ee.DlcValue1 = ReadInt32(reader, endianWsg);
+                    ee.DlcValue2 = ReadInt32(reader, endianWsg);
                     et.Echoes.Add(ee);
                 }
                 EchoLists.Add(et);
@@ -1260,36 +1218,36 @@ namespace WillowTree
             return echoListCount;
         }
         
-        private int ReadQuests(BinaryReader reader, ByteOrder EndianWSG)
+        private int ReadQuests(BinaryReader reader, ByteOrder endianWsg)
         {
-            int NumberOfQuestLists = ReadInt32(reader, EndianWSG);
+            int numberOfQuestList = ReadInt32(reader, endianWsg);
 
             QuestLists.Clear();
-            for (int listIndex = 0; listIndex < NumberOfQuestLists; listIndex++)
+            for (int listIndex = 0; listIndex < numberOfQuestList; listIndex++)
             {
                 QuestTable qt = new QuestTable();
-                qt.Index = ReadInt32(reader, EndianWSG);
-                qt.CurrentQuest = ReadString(reader, EndianWSG);
-                qt.TotalQuests = ReadInt32(reader, EndianWSG);
+                qt.Index = ReadInt32(reader, endianWsg);
+                qt.CurrentQuest = ReadString(reader, endianWsg);
+                qt.TotalQuests = ReadInt32(reader, endianWsg);
                 qt.Quests = new List<QuestEntry>();
                 int questCount = qt.TotalQuests;
 
                 for (int questIndex = 0; questIndex < questCount; questIndex++)
                 {
                     QuestEntry qe = new QuestEntry();
-                    qe.Name = ReadString(reader, EndianWSG);
-                    qe.Progress = ReadInt32(reader, EndianWSG);
-                    qe.DLCValue1 = ReadInt32(reader, EndianWSG);
-                    qe.DLCValue2 = ReadInt32(reader, EndianWSG);
+                    qe.Name = ReadString(reader, endianWsg);
+                    qe.Progress = ReadInt32(reader, endianWsg);
+                    qe.DlcValue1 = ReadInt32(reader, endianWsg);
+                    qe.DlcValue2 = ReadInt32(reader, endianWsg);
 
-                    int objectiveCount = ReadInt32(reader, EndianWSG);
+                    int objectiveCount = ReadInt32(reader, endianWsg);
                     qe.NumberOfObjectives = objectiveCount;
                     qe.Objectives = new QuestObjective[objectiveCount];
 
                     for (int objectiveIndex = 0; objectiveIndex < objectiveCount; objectiveIndex++)
                     {
-                        qe.Objectives[objectiveIndex].Description = ReadString(reader, EndianWSG);
-                        qe.Objectives[objectiveIndex].Progress = ReadInt32(reader, EndianWSG);
+                        qe.Objectives[objectiveIndex].Description = ReadString(reader, endianWsg);
+                        qe.Objectives[objectiveIndex].Progress = ReadInt32(reader, endianWsg);
                     }
                     qt.Quests.Add(qe);
                 }
@@ -1299,122 +1257,66 @@ namespace WillowTree
 
                 QuestLists.Add(qt);
             }
-            return NumberOfQuestLists;
+            return numberOfQuestList;
         }
 
-        private int ReadSkills(BinaryReader reader, ByteOrder EndianWSG)
+        private int ReadSkills(BinaryReader reader, ByteOrder endianWsg)
         {
-            int skillsCount = ReadInt32(reader, EndianWSG);
+            int skillsCount = ReadInt32(reader, endianWsg);
 
-            string[] TempSkillNames = new string[skillsCount];
-            int[] TempLevelOfSkills = new int[skillsCount];
-            int[] TempExpOfSkills = new int[skillsCount];
-            int[] TempInUse = new int[skillsCount];
+            string[] tempSkillNames = new string[skillsCount];
+            int[] tempLevelOfSkills = new int[skillsCount];
+            int[] tempExpOfSkills = new int[skillsCount];
+            int[] tempInUse = new int[skillsCount];
 
-            for (int Progress = 0; Progress < skillsCount; Progress++)
+            for (int progress = 0; progress < skillsCount; progress++)
             {
-                TempSkillNames[Progress] = ReadString(reader, EndianWSG);
-                TempLevelOfSkills[Progress] = ReadInt32(reader, EndianWSG);
-                TempExpOfSkills[Progress] = ReadInt32(reader, EndianWSG);
-                TempInUse[Progress] = ReadInt32(reader, EndianWSG);
+                tempSkillNames[progress] = ReadString(reader, endianWsg);
+                tempLevelOfSkills[progress] = ReadInt32(reader, endianWsg);
+                tempExpOfSkills[progress] = ReadInt32(reader, endianWsg);
+                tempInUse[progress] = ReadInt32(reader, endianWsg);
             }
 
-            SkillNames = TempSkillNames;
-            LevelOfSkills = TempLevelOfSkills;
-            ExpOfSkills = TempExpOfSkills;
-            InUse = TempInUse;
+            SkillNames = tempSkillNames;
+            LevelOfSkills = tempLevelOfSkills;
+            ExpOfSkills = tempExpOfSkills;
+            InUse = tempInUse;
 
             return skillsCount;
         }
 
-        private int ReadAmmo(BinaryReader reader, ByteOrder EndianWSG)
+        private int ReadAmmo(BinaryReader reader, ByteOrder endianWsg)
         {
-            int poolsCount = ReadInt32(reader, EndianWSG);
+            int poolsCount = ReadInt32(reader, endianWsg);
  
-            string[] TempResourcePools = new string[poolsCount];
-            string[] TempAmmoPools = new string[poolsCount];
-            float[] TempRemainingPools = new float[poolsCount];
-            int[] TempPoolLevels = new int[poolsCount];
+            string[] tempResourcePools = new string[poolsCount];
+            string[] tempAmmoPools = new string[poolsCount];
+            float[] tempRemainingPools = new float[poolsCount];
+            int[] tempPoolLevels = new int[poolsCount];
 
-            for (int Progress = 0; Progress < poolsCount; Progress++)
+            for (int progress = 0; progress < poolsCount; progress++)
             {
-                TempResourcePools[Progress] = ReadString(reader, EndianWSG);
-                TempAmmoPools[Progress] = ReadString(reader, EndianWSG);
-                TempRemainingPools[Progress] = ReadSingle(reader, EndianWSG);
-                TempPoolLevels[Progress] = ReadInt32(reader, EndianWSG);
+                tempResourcePools[progress] = ReadString(reader, endianWsg);
+                tempAmmoPools[progress] = ReadString(reader, endianWsg);
+                tempRemainingPools[progress] = ReadSingle(reader, endianWsg);
+                tempPoolLevels[progress] = ReadInt32(reader, endianWsg);
             }
 
-            ResourcePools = TempResourcePools;
-            AmmoPools = TempAmmoPools;
-            RemainingPools = TempRemainingPools;
-            PoolLevels = TempPoolLevels;
+            ResourcePools = tempResourcePools;
+            AmmoPools = tempAmmoPools;
+            RemainingPools = tempRemainingPools;
+            PoolLevels = tempPoolLevels;
 
             return poolsCount;
         }
 
-        //private int ReadItems(BinaryReader reader, ByteOrder EndianWSG)
-        //{
-        //    int itemCount = ReadInt32(reader, EndianWSG);
-
-        //    for (int Progress = 0; Progress < itemCount; Progress++)
-        //    {
-        //        List<string> strings = new List<string>();
-        //        for (int TotalStrings = 0; TotalStrings < 9; TotalStrings++)
-        //            strings.Add(ReadString(reader, EndianWSG));
-        //        ItemStrings.Add(strings);
-
-        //        List<int> values = new List<int>();
-        //        Int32 Value1 = ReadInt32(reader, EndianWSG);
-        //        UInt32 tempLevelQuality = (UInt32)ReadInt32(reader, EndianWSG);
-        //        Int16 Quality = (Int16)(tempLevelQuality % (UInt32)65536);
-        //        Int16 Level = (Int16)(tempLevelQuality / (UInt32)65536);
-        //        Int32 EquippedSlot = ReadInt32(reader, EndianWSG);
-        //        values.Add(Value1);
-        //        values.Add(Quality);
-        //        values.Add(EquippedSlot);
-        //        values.Add(Level);
-        //        ItemValues.Add(values);
-        //    }
-        //    return itemCount;
-        //}
-
-        //private int ReadWeapons(BinaryReader reader, ByteOrder EndianWSG)
-        //{
-        //    int weaponCount = ReadInt32(reader, EndianWSG);
-
-        //    for (int Progress = 0; Progress < weaponCount; Progress++)
-        //    {
-        //        List<string> strings = new List<string>();
-
-        //        for (int TotalStrings = 0; TotalStrings < 14; TotalStrings++)
-        //            strings.Add(ReadString(reader, EndianWSG));
-
-        //        Int32 AmmoCount = ReadInt32(reader, EndianWSG);
-        //        UInt32 tempLevelQuality = (UInt32)ReadInt32(reader, EndianWSG);
-        //        Int16 Level = (Int16)(tempLevelQuality / (UInt32)65536);
-        //        Int16 Quality = (Int16)(tempLevelQuality % (UInt32)65536);
-        //        Int32 EquippedSlot = ReadInt32(reader, EndianWSG);
-
-        //        List<int> values = new List<int>() {
-        //            AmmoCount,
-        //            Quality,
-        //            EquippedSlot,
-        //            Level
-        //        };
-
-        //        WeaponStrings.Add(strings);
-        //        WeaponValues.Add(values);
-        //    }
-        //    return weaponCount;
-        //}
-
-        private int ReadLocations(BinaryReader reader, ByteOrder EndianWSG)
+        private int ReadLocations(BinaryReader reader, ByteOrder endianWsg)
         {
-            int locationCount = ReadInt32(reader, EndianWSG);
+            int locationCount = ReadInt32(reader, endianWsg);
             string[] tempLocationStrings = new string[locationCount];
 
-            for (int Progress = 0; Progress < locationCount; Progress++)
-                tempLocationStrings[Progress] = ReadString(reader, EndianWSG);
+            for (int progress = 0; progress < locationCount; progress++)
+                tempLocationStrings[progress] = ReadString(reader, endianWsg);
 
             LocationStrings = tempLocationStrings;
             return locationCount;
@@ -1423,21 +1325,21 @@ namespace WillowTree
         public void DiscardRawData()
         {
             // Make a list of all the known data sections to compare against.
-            List<int> KnownSectionIds = new List<int>() {
-                DLC_Data.Section1Id,
-                DLC_Data.Section2Id,
-                DLC_Data.Section3Id,
-                DLC_Data.Section4Id,
+            List<int> knownSectionIds = new List<int>() {
+                DlcData.Section1Id,
+                DlcData.Section2Id,
+                DlcData.Section3Id,
+                DlcData.Section4Id,
             };
 
             // Traverse the list of data sections from end to beginning because when
             // an item gets deleted it does not affect the index of the ones before it,
             // but it does change the index of the ones after it.
-            for (int i = this.DLC.DataSections.Count - 1; i >= 0; i--)
+            for (int i = Dlc.DataSections.Count - 1; i >= 0; i--)
             {
-                WillowSaveGame.DLCSection section = this.DLC.DataSections[i];
+                DlcSection section = Dlc.DataSections[i];
 
-                if (KnownSectionIds.Contains(section.Id))
+                if (knownSectionIds.Contains(section.Id))
                 {
                     // clear the raw data in this DLC data section
                     section.RawData = new byte[0];
@@ -1446,51 +1348,53 @@ namespace WillowTree
                 {
                     // if the section id is not recognized remove it completely
                     section.RawData = null;
-                    this.DLC.DataSections.RemoveAt(i);
+                    Dlc.DataSections.RemoveAt(i);
                 }
             }
 
             // Now that all the raw data has been removed, reset the raw data flag
-            this.ContainsRawData = false;
+            ContainsRawData = false;
         }
 
-        private static void Write(BinaryWriter writer, byte[] value, ByteOrder endian)
+        private static void Write(BinaryWriter writer, byte[] value)
         {
             writer.Write(value);
         }
 
         private void WriteValues(BinaryWriter Out, List<int> values)
         {
-            Write(Out, values[0], EndianWSG);
+            Write(Out, values[0], EndianWsg);
             UInt32 tempLevelQuality = (UInt16)values[1] + (UInt16)values[3] * (UInt32)65536;
-            Write(Out, (Int32)tempLevelQuality, EndianWSG);
-            Write(Out, values[2], EndianWSG);
+            Write(Out, (Int32)tempLevelQuality, EndianWsg);
+            Write(Out, values[2], EndianWsg);
+            if (RevisionNumber <= 26) return;
+            Console.WriteLine(RevisionNumber);
+            Write(Out, values[4], EndianWsg);
+            Write(Out, values[5], EndianWsg);
         }
 
         private void WriteStrings(BinaryWriter Out, List<string> strings)
         {
             foreach (var s in strings)
             {
-                Write(Out, s, EndianWSG);
+                Write(Out, s, EndianWsg);
             }
         }
 
         private void WritePaddings(BinaryWriter Out, byte[] data)
         {
-            Write(Out, data, EndianWSG);
+            Write(Out, data);
         }
 
         private void WriteObject<T>(BinaryWriter Out, T obj) where T : Object
         {
             WriteStrings(Out, obj.Strings);
             WriteValues(Out, obj.Values);
-            if (obj.Paddings != null)
-                WritePaddings(Out, obj.Paddings);
         }
 
         private void WriteObjects<T>(BinaryWriter Out, List<T> objs) where T : Object
         {
-            Write(Out, objs.Count, EndianWSG);
+            Write(Out, objs.Count, EndianWsg);
             foreach (var obj in objs)
             {
                 WriteObject(Out, obj);
@@ -1498,215 +1402,213 @@ namespace WillowTree
         }
 
         ///<summary>Save the current data to a WSG as a byte[]</summary>
-        public byte[] WriteWSG()
+        public byte[] WriteWsg()
         {
-            MemoryStream OutStream = new MemoryStream();
-            BinaryWriter Out = new BinaryWriter(OutStream);
+            MemoryStream outStream = new MemoryStream();
+            BinaryWriter Out = new BinaryWriter(outStream);
 
             SplitInventoryIntoPacks();
 
             Out.Write(Encoding.ASCII.GetBytes(MagicHeader));
-            Write(Out, VersionNumber, EndianWSG);
-            Out.Write(Encoding.ASCII.GetBytes(PLYR));
-            Write(Out, RevisionNumber, EndianWSG);
-            Write(Out, Class, EndianWSG);
-            Write(Out, Level, EndianWSG);
-            Write(Out, Experience, EndianWSG);
-            Write(Out, SkillPoints, EndianWSG);
-            Write(Out, Unknown1, EndianWSG);
-            Write(Out, Cash, EndianWSG);
-            Write(Out, FinishedPlaythrough1, EndianWSG);
-            Write(Out, NumberOfSkills, EndianWSG);
+            Write(Out, VersionNumber, EndianWsg);
+            Out.Write(Encoding.ASCII.GetBytes(Plyr));
+            Write(Out, RevisionNumber, EndianWsg);
+            Write(Out, Class, EndianWsg);
+            Write(Out, Level, EndianWsg);
+            Write(Out, Experience, EndianWsg);
+            Write(Out, SkillPoints, EndianWsg);
+            Write(Out, Unknown1, EndianWsg);
+            Write(Out, Cash, EndianWsg);
+            Write(Out, FinishedPlaythrough1, EndianWsg);
+            Write(Out, NumberOfSkills, EndianWsg);
 
-            for (int Progress = 0; Progress < NumberOfSkills; Progress++) //Write Skills
+            for (int progress = 0; progress < NumberOfSkills; progress++) //Write Skills
             {
-                Write(Out, SkillNames[Progress], EndianWSG);
-                Write(Out, LevelOfSkills[Progress], EndianWSG);
-                Write(Out, ExpOfSkills[Progress], EndianWSG);
-                Write(Out, InUse[Progress], EndianWSG);
+                Write(Out, SkillNames[progress], EndianWsg);
+                Write(Out, LevelOfSkills[progress], EndianWsg);
+                Write(Out, ExpOfSkills[progress], EndianWsg);
+                Write(Out, InUse[progress], EndianWsg);
             }
 
-            Write(Out, Vehi1Color, EndianWSG);
-            Write(Out, Vehi2Color, EndianWSG);
-            Write(Out, Vehi1Type, EndianWSG);
-            Write(Out, Vehi2Type, EndianWSG);
-            Write(Out, NumberOfPools, EndianWSG);
+            Write(Out, Vehi1Color, EndianWsg);
+            Write(Out, Vehi2Color, EndianWsg);
+            Write(Out, Vehi1Type, EndianWsg);
+            Write(Out, Vehi2Type, EndianWsg);
+            Write(Out, NumberOfPools, EndianWsg);
 
-            for (int Progress = 0; Progress < NumberOfPools; Progress++) //Write Ammo Pools
+            for (int progress = 0; progress < NumberOfPools; progress++) //Write Ammo Pools
             {
-                Write(Out, ResourcePools[Progress], EndianWSG);
-                Write(Out, AmmoPools[Progress], EndianWSG);
-                Write(Out, RemainingPools[Progress], EndianWSG);
-                Write(Out, PoolLevels[Progress], EndianWSG);
+                Write(Out, ResourcePools[progress], EndianWsg);
+                Write(Out, AmmoPools[progress], EndianWsg);
+                Write(Out, RemainingPools[progress], EndianWsg);
+                Write(Out, PoolLevels[progress], EndianWsg);
             }
 
 
             WriteObjects(Out, Items1); //Write Items
 
-            Write(Out, BackpackSize, EndianWSG);
-            Write(Out, EquipSlots, EndianWSG);
+            Write(Out, BackpackSize, EndianWsg);
+            Write(Out, EquipSlots, EndianWsg);
 
             WriteObjects(Out, Weapons1); //Write Weapons
 
-            Int16 count = (Int16)Challenges.Count();
-            Write(Out, count * 7 + 10, EndianWSG);
-            Write(Out, ChallengeDataBlockId, EndianWSG);
-            Write(Out, count * 7 + 2, EndianWSG);
-            Write(Out, count, EndianWSG);
-            foreach (ChallengeDataEntry challenge in Challenges)
+            Int16 count = (Int16)_challenges.Count();
+            Write(Out, count * 7 + 10, EndianWsg);
+            Write(Out, ChallengeDataBlockId, EndianWsg);
+            Write(Out, count * 7 + 2, EndianWsg);
+            Write(Out, count, EndianWsg);
+            foreach (ChallengeDataEntry challenge in _challenges)
             {
-                Write(Out, challenge.Id, EndianWSG);
+                Write(Out, challenge.Id, EndianWsg);
                 Out.Write(challenge.TypeId);
-                Write(Out, challenge.Value, EndianWSG);
+                Write(Out, challenge.Value, EndianWsg);
             }
 
-            Write(Out, TotalLocations, EndianWSG);
+            Write(Out, TotalLocations, EndianWsg);
 
-            for (int Progress = 0; Progress < TotalLocations; Progress++) //Write Locations
-                Write(Out, LocationStrings[Progress], EndianWSG);
+            for (int progress = 0; progress < TotalLocations; progress++) //Write Locations
+                Write(Out, LocationStrings[progress], EndianWsg);
 
-            Write(Out, CurrentLocation, EndianWSG);
-            Write(Out, SaveInfo1to5[0], EndianWSG);
-            Write(Out, SaveInfo1to5[1], EndianWSG);
-            Write(Out, SaveInfo1to5[2], EndianWSG);
-            Write(Out, SaveInfo1to5[3], EndianWSG);
-            Write(Out, SaveInfo1to5[4], EndianWSG);
-            Write(Out, SaveNumber, EndianWSG);
-            Write(Out, SaveInfo7to10[0], EndianWSG);
-            Write(Out, SaveInfo7to10[1], EndianWSG);
-            Write(Out, NumberOfQuestLists, EndianWSG);
+            Write(Out, CurrentLocation, EndianWsg);
+            Write(Out, SaveInfo1To5[0], EndianWsg);
+            Write(Out, SaveInfo1To5[1], EndianWsg);
+            Write(Out, SaveInfo1To5[2], EndianWsg);
+            Write(Out, SaveInfo1To5[3], EndianWsg);
+            Write(Out, SaveInfo1To5[4], EndianWsg);
+            Write(Out, SaveNumber, EndianWsg);
+            Write(Out, SaveInfo7To10[0], EndianWsg);
+            Write(Out, SaveInfo7To10[1], EndianWsg);
+            Write(Out, NumberOfQuestLists, EndianWsg);
 
             for (int listIndex = 0; listIndex < NumberOfQuestLists; listIndex++)
             {
                 QuestTable qt = QuestLists[listIndex];
-                Write(Out, qt.Index, EndianWSG);
-                Write(Out, qt.CurrentQuest, EndianWSG);
-                Write(Out, qt.TotalQuests, EndianWSG);
+                Write(Out, qt.Index, EndianWsg);
+                Write(Out, qt.CurrentQuest, EndianWsg);
+                Write(Out, qt.TotalQuests, EndianWsg);
 
                 int questCount = qt.TotalQuests;
                 for (int questIndex = 0; questIndex < questCount; questIndex++)  //Write Playthrough 1 Quests
                 {
                     QuestEntry qe = qt.Quests[questIndex];
-                    Write(Out, qe.Name, EndianWSG);
-                    Write(Out, qe.Progress, EndianWSG);
-                    Write(Out, qe.DLCValue1, EndianWSG);
-                    Write(Out, qe.DLCValue2, EndianWSG);
+                    Write(Out, qe.Name, EndianWsg);
+                    Write(Out, qe.Progress, EndianWsg);
+                    Write(Out, qe.DlcValue1, EndianWsg);
+                    Write(Out, qe.DlcValue2, EndianWsg);
 
                     int objectiveCount = qe.NumberOfObjectives;
-                    Write(Out, objectiveCount, EndianWSG);
+                    Write(Out, objectiveCount, EndianWsg);
 
                     for (int i = 0; i < objectiveCount; i++)
                     {
-                        Write(Out, qe.Objectives[i].Description, EndianWSG);
-                        Write(Out, qe.Objectives[i].Progress, EndianWSG);
+                        Write(Out, qe.Objectives[i].Description, EndianWsg);
+                        Write(Out, qe.Objectives[i].Progress, EndianWsg);
                     }
                 }
             }
 
-            Write(Out, TotalPlayTime, EndianWSG);
-            Write(Out, LastPlayedDate, EndianWSG);
-            Write(Out, CharacterName, EndianWSG);
-            Write(Out, Color1, EndianWSG); //ABGR Big (X360, PS3), RGBA Little (PC)
-            Write(Out, Color2, EndianWSG); //ABGR Big (X360, PS3), RGBA Little (PC)
-            Write(Out, Color3, EndianWSG); //ABGR Big (X360, PS3), RGBA Little (PC)
-            Write(Out, Head, EndianWSG);
+            Write(Out, TotalPlayTime, EndianWsg);
+            Write(Out, LastPlayedDate, EndianWsg);
+            Write(Out, CharacterName, EndianWsg);
+            Write(Out, Color1, EndianWsg); //ABGR Big (X360, PS3), RGBA Little (PC)
+            Write(Out, Color2, EndianWsg); //ABGR Big (X360, PS3), RGBA Little (PC)
+            Write(Out, Color3, EndianWsg); //ABGR Big (X360, PS3), RGBA Little (PC)
+            Write(Out, Head, EndianWsg);
 
             if (RevisionNumber > 38)
             {
-                Write(Out, Unknown2, EndianWSG);
+                Write(Out, Unknown2);
             }
             else
             {
-                int NumberOfPromoCodesUsed = PromoCodesUsed.Count;
-                Write(Out, NumberOfPromoCodesUsed, EndianWSG);
-                for (int i = 0; i < NumberOfPromoCodesUsed; i++)
-                    Write(Out, PromoCodesUsed[i], EndianWSG);
-                int NumberOfPromoCodesRequiringNotification = PromoCodesRequiringNotification.Count;
-                Write(Out, NumberOfPromoCodesRequiringNotification, EndianWSG);
-                for (int i = 0; i < NumberOfPromoCodesRequiringNotification; i++)
-                    Write(Out, PromoCodesRequiringNotification[i], EndianWSG);
+                int numberOfPromoCodesUsed = PromoCodesUsed.Count;
+                Write(Out, numberOfPromoCodesUsed, EndianWsg);
+                for (int i = 0; i < numberOfPromoCodesUsed; i++)
+                    Write(Out, PromoCodesUsed[i], EndianWsg);
+                int numberOfPromoCodesRequiringNotification = PromoCodesRequiringNotification.Count;
+                Write(Out, numberOfPromoCodesRequiringNotification, EndianWsg);
+                for (int i = 0; i < numberOfPromoCodesRequiringNotification; i++)
+                    Write(Out, PromoCodesRequiringNotification[i], EndianWsg);
             }
  
-            Write(Out, NumberOfEchoLists, EndianWSG);
+            Write(Out, NumberOfEchoLists, EndianWsg);
             for (int listIndex = 0; listIndex < NumberOfEchoLists; listIndex++)
             {
                 EchoTable et = EchoLists[listIndex];
-                Write(Out, et.Index, EndianWSG);
-                Write(Out, et.TotalEchoes, EndianWSG);
+                Write(Out, et.Index, EndianWsg);
+                Write(Out, et.TotalEchoes, EndianWsg);
 
                 for (int echoIndex = 0; echoIndex < et.TotalEchoes; echoIndex++) //Write Locations
                 {
                     EchoEntry ee = et.Echoes[echoIndex];
-                    Write(Out, ee.Name, EndianWSG);
-                    Write(Out, ee.DLCValue1, EndianWSG);
-                    Write(Out, ee.DLCValue2, EndianWSG);
+                    Write(Out, ee.Name, EndianWsg);
+                    Write(Out, ee.DlcValue1, EndianWsg);
+                    Write(Out, ee.DlcValue2, EndianWsg);
                 }
             }
 
-            DLC.DLC_Size = 0;
+            Dlc.DlcSize = 0;
             // This loop writes the base data for each section into byte[]
             // BaseData so its size can be obtained and it can easily be
             // written to the output stream as a single block.  Calculate
             // DLC.DLC_Size as it goes since that has to be written before
             // the blocks are written to the output stream.
-            foreach (DLCSection Section in DLC.DataSections)
+            foreach (DlcSection section in Dlc.DataSections)
             {
                 MemoryStream tempStream = new MemoryStream();
                 BinaryWriter memwriter = new BinaryWriter(tempStream);
-                switch (Section.Id)
+                switch (section.Id)
                 {
-                    case DLC_Data.Section1Id:
-                        memwriter.Write(DLC.DLC_Unknown1);
-                        Write(memwriter, DLC.BankSize, EndianWSG);
-                        Write(memwriter, DLC.BankInventory.Count, EndianWSG);
-                        for (int i = 0; i < DLC.BankInventory.Count; i++)
-                            Write(memwriter, DLC.BankInventory[i].GetBytes(EndianWSG), EndianWSG);
+                    case DlcData.Section1Id:
+                        memwriter.Write(Dlc.DlcUnknown1);
+                        Write(memwriter, Dlc.BankSize, EndianWsg);
+                        Write(memwriter, Dlc.BankInventory.Count, EndianWsg);
+                        for (int i = 0; i < Dlc.BankInventory.Count; i++)
+                            Write(memwriter, Dlc.BankInventory[i].Serialize(EndianWsg));
                         break;
-                    case DLC_Data.Section2Id:
-                        Write(memwriter, DLC.DLC_Unknown2, EndianWSG);
-                        Write(memwriter, DLC.DLC_Unknown3, EndianWSG);
-                        Write(memwriter, DLC.DLC_Unknown4, EndianWSG);
-                        Write(memwriter, DLC.SkipDLC2Intro, EndianWSG);
+                    case DlcData.Section2Id:
+                        Write(memwriter, Dlc.DlcUnknown2, EndianWsg);
+                        Write(memwriter, Dlc.DlcUnknown3, EndianWsg);
+                        Write(memwriter, Dlc.DlcUnknown4, EndianWsg);
+                        Write(memwriter, Dlc.SkipDlc2Intro, EndianWsg);
                         break;
-                    case DLC_Data.Section3Id:
-                        memwriter.Write(DLC.DLC_Unknown5);
+                    case DlcData.Section3Id:
+                        memwriter.Write(Dlc.DlcUnknown5);
                         break;
-                    case DLC_Data.Section4Id:
-                        memwriter.Write(DLC.SecondaryPackEnabled);
+                    case DlcData.Section4Id:
+                        memwriter.Write(Dlc.SecondaryPackEnabled);
                         // The DLC backpack items
                         WriteObjects(memwriter, Items2);
                         // The DLC backpack weapons
                         WriteObjects(memwriter, Weapons2);
                         break;
-                    default:
-                        break;
                 }
-                Section.BaseData = tempStream.ToArray();
-                DLC.DLC_Size += Section.BaseData.Count() + Section.RawData.Count() + 8; // 8 = 4 bytes for id, 4 bytes for length
+                section.BaseData = tempStream.ToArray();
+                Dlc.DlcSize += section.BaseData.Count() + section.RawData.Count() + 8; // 8 = 4 bytes for id, 4 bytes for length
             }
 
             // Now its time to actually write all the data sections to the output stream
-            Write(Out, DLC.DLC_Size, EndianWSG);
-            foreach (DLCSection Section in DLC.DataSections)
+            Write(Out, Dlc.DlcSize, EndianWsg);
+            foreach (DlcSection section in Dlc.DataSections)
             {
-                Write(Out, Section.Id, EndianWSG);
-                int SectionLength = Section.BaseData.Count() + Section.RawData.Count();
-                Write(Out, SectionLength, EndianWSG);
-                Out.Write(Section.BaseData);
-                Out.Write(Section.RawData);
-                Section.BaseData = null; // BaseData isn't needed anymore.  Free it.
+                Write(Out, section.Id, EndianWsg);
+                int sectionLength = section.BaseData.Count() + section.RawData.Count();
+                Write(Out, sectionLength, EndianWsg);
+                Out.Write(section.BaseData);
+                Out.Write(section.RawData);
+                section.BaseData = null; // BaseData isn't needed anymore.  Free it.
             }
             if (RevisionNumber > 38)
             {
                 //Past end padding
-                Write(Out, Unknown3, EndianWSG);
+                Write(Out, Unknown3);
             }
             // Clear the temporary lists used to split primary and DLC pack data
             Items1 = null;
             Items2 = null;
             Weapons1 = null;
             Weapons2 = null;
-            return OutStream.ToArray();
+            return outStream.ToArray();
         }
         ///<summary>Split the weapon and item lists into two parts: one for the primary pack and one for DLC backpack</summary>
         public void SplitInventoryIntoPacks()
@@ -1719,7 +1621,7 @@ namespace WillowTree
             // DLC backpack or regular backpack area as needed.  Any item with a level 
             // override and special dlc items go in the DLC backpack.  All others go 
             // in the regular inventory.
-            if ((DLC.HasSection4 == false) || (DLC.SecondaryPackEnabled == 0))
+            if ((Dlc.HasSection4 == false) || (Dlc.SecondaryPackEnabled == 0))
             {
                 // no secondary pack so put it all in primary pack
                 foreach (var item in Items)
@@ -1746,130 +1648,176 @@ namespace WillowTree
             }
         }
 
-        //public sealed class BankEntry
-        //{
-        //    public Byte TypeId;
-        //    public List<string> Parts = new List<string>();
-        //    public Int32 Quantity; //AmmoOrQuantity
-        //    public Byte Equipped;
-        //    public Int16 Quality;
-        //    public Int16 Level;
-        //    public byte[] padding;
+        private const byte SubPart = 32;
 
-        //    public void PrintParts()
-        //    {
-        //        foreach (var part in Parts)
-        //        {
-        //            Console.WriteLine(part);
-        //        }
-        //    }
-        //}
-        private static byte SUBPART = 32;
-        public abstract class IPart
+        public sealed class BankEntry : Object
         {
-            public abstract byte[] GetBytes(ByteOrder endian, BankEntry entry, int index);
-            public abstract string Init(BinaryReader reader, ByteOrder endian, BankEntry entry, bool last);
-            public string Name;
-        }
+            public Byte TypeId;
 
-        public class Part : IPart {
-            public byte Mask;
-            public byte[] Padding;// Could be size 12 or 8 for Unique part
-            public byte[] ExtraData = null;
+            public int Quantity
+            {
+                get { return Values[0]; }
+                set { Values[0] = value; }
+            }
 
-            public override byte[] GetBytes(ByteOrder endian, BankEntry entry, int index)
+            public byte[] Serialize(ByteOrder endian)
             {
                 var bytes = new List<byte>();
-                
-                if (Name == "None")
+                if (TypeId != 1 && TypeId != 2)
+                    throw new FormatException("Bank entry to be written has an invalid Type ID.  TypeId = " + TypeId);
+                bytes.Add(TypeId);
+                foreach (var component in Strings)
                 {
-                    return new byte[25];
-                }
-                bytes.Add(Mask);
-                bytes.AddRange(Padding);
-                string[] splitPart = Name.Split('.');
-                foreach (var str in splitPart)
-                {
-                    var tmpStr = GetBytesFromString(str, endian);
-                    foreach (var b in tmpStr)
+                    bytes.Add(32);
+                    var subComponentArray = component.Split('.');
+                    bytes.AddRange(new byte[6 - subComponentArray.Length]);
+                    foreach (var subComponent in subComponentArray)
                     {
-                        bytes.Add(b);
+                        bytes.AddRange(subComponent == "None" ? new byte[5] : GetBytesFromString(subComponent, endian));
+                    }
+                    bytes.AddRange(new byte[8]);
+                    bytes.Add((byte)EquipedSlot);
+                    bytes.Add(1);
+                    if (ExportValuesCount > 4)
+                    {
+                        bytes.Add((byte)Values[0]);
+                        bytes.Add((byte)Junk);
+                    }
+                    if (TypeId == 1)
+                    {
+                        bytes.AddRange(GetBytesFromInt(Values[0], endian));
+                    }
+                    else
+                    {
+                        if (ExportValuesCount > 4)
+                            bytes.Add((byte)Locked);
+                        else
+                            bytes.Add((byte)Quantity);
                     }
                 }
-                if (index == 2)
-                {
-                    bytes.AddRange(GetBytesFromInt((UInt16)entry.Quality + (UInt16)entry.Level * (UInt32)65536, endian));
-                }
-                if (ExtraData != null)
-                    bytes.AddRange(ExtraData);
                 return bytes.ToArray();
             }
 
-            public override string Init(BinaryReader reader, ByteOrder endian, BankEntry entry, bool last)
+            private void DeserializePart(BinaryReader reader, ByteOrder endian, out string part, int index)
             {
-                var bytes2 = new List<byte>();
-
                 var mask = reader.ReadByte();
-
-                if (mask == SUBPART)
+                if (mask == 0)
                 {
-                    Mask = mask;
-                }
-                else if (mask == 0)
-                {
-                    ReadBytes(reader, 24, endian); //None
-                    Mask = mask;
-                    Name = "None";
-                    return "None";
+                    part = "None";
+                    ReadBytes(reader, 24, endian);
                 }
                 else
                 {
-                    Console.WriteLine("Invalid Entry" + mask);
+                    var padding = SearchForString(reader, endian);
+                    string partName = "";
+                    for (int i = 0; i < (padding.Length == 8 ? 4 : 3); i++)
+                    {
+                        var tmp = ReadString(reader, endian);
+                        if (i != 0)
+                            partName += "." + tmp;
+                        else
+                            partName += tmp;
+                    }
+                    part = partName;
+                    if (index == 2)
+                    {
+                        UInt32 temp = (UInt32)ReadInt32(reader, endian);
+                        Quality = (Int16)(temp % (UInt32)65536);
+                        Level = (Int16)(temp / (UInt32)65536);
+                    }
                 }
-                bytes2.AddRange(PaddingShort(reader, endian));
-                Padding = bytes2.ToArray();
-
-                Name = ReadBankEntryPart(reader, endian, Padding.Length);
-                var category = Name.Split('.')[1].Split('_')[0];
-                return category;
             }
-            protected static byte[] PaddingShort(BinaryReader reader, ByteOrder endian)
-            {
-                var bytes = new List<byte>();
-                var b = ReadBytes(reader, 1, endian);
-                short val = b[0];
-                if (val != 0)
-                {
-                    reader.BaseStream.Position -= 1;
-                    return null;
-                }
 
-                bytes.AddRange(b);
-                //Looking for next byte != 0
-                while (val == 0)
+            private static void ReadOldFooter(BankEntry entry, BinaryReader reader, ByteOrder endian)
+            {
+                byte[] footer = reader.ReadBytes(10);
+                entry.EquipedSlot = footer[8];
+                entry.Quantity = entry.TypeId == 1 ? ReadInt32(reader, endian) : reader.ReadByte();
+            }
+
+            private static void ReadNewFooter(BankEntry entry, BinaryReader reader, ByteOrder endian)
+            {
+                byte[] footer = reader.ReadBytes(12);
+                entry.EquipedSlot = footer[8];
+                if (entry.TypeId == 1)
                 {
-                    b = ReadBytes(reader, 1, endian);
-                    val = b[0];
-                    if (val == 0)
-                        bytes.AddRange(b);
-                    else
+                    entry.Quantity = ReadInt32(reader, endian);//Ammo
+                    entry.Junk = footer[10];
+                    entry.Locked = footer[11];
+                }
+                else
+                {
+                    entry.Quantity = footer[10];//Ammo
+                    entry.Junk = footer[11];
+                    entry.Locked = reader.ReadByte();
+                }
+            }
+
+            public static void RepaireItem(BinaryReader reader, ByteOrder endian, BankEntry entry, int offset)
+            {
+                Console.WriteLine("Repair item");
+                reader.BaseStream.Position -= offset + (entry.TypeId == 1 ? 16 : 11);
+                ReadOldFooter(entry, reader, endian);
+            }
+
+            public void Deserialize(BinaryReader reader, ByteOrder endian, BankEntry previous)
+            {
+                TypeId = reader.ReadByte();
+                if (TypeId != 1 && TypeId != 2)
+                {
+                //Try to repair broken item
+                    if (previous != null)
+                    {
+                        RepaireItem(reader, endian, previous, 1);
+                        TypeId = reader.ReadByte();
+                        Console.WriteLine(TypeId + " " + reader.ReadByte());
                         reader.BaseStream.Position -= 1;
+                        if (TypeId != 1 && TypeId != 2)
+                        {
+                            reader.BaseStream.Position -= 1 + (previous.TypeId == 1 ? 4 : 1);
+                            SearchNextItem(reader, endian);
+                            TypeId = reader.ReadByte();
+                        }
+                        else
+                        {
+                            BankValuesCount = 4;
+                        }
+                    }
                 }
-                return bytes.ToArray();
+                
+                Strings = new List<string>();
+                Strings.AddRange(new string[TypeId == 1 ? 14 : 9]);
+                Values.AddRange(new int[ExportValuesCount]);
+                for (var i = 0; i < Strings.Count; i++)
+                {
+                    DeserializePart(reader, endian, out var part, i);
+                    Strings[i] = part;
+                    Console.WriteLine(part);
+                }
+
+                if (BankValuesCount > 4)
+                    ReadNewFooter(this, reader, endian);
+                else
+                    ReadOldFooter(this, reader, endian);
             }
-            protected static byte[] SearchNextItem(BinaryReader reader, ByteOrder endian)
+
+            private static byte[] SearchNextItem(BinaryReader reader, ByteOrder endian)
             {
                 var bytes = new List<byte>();
                 var b = ReadBytes(reader, 1, endian);
                 short val = b[0];
-
+                if (val == SubPart)
+                {
+                    reader.BaseStream.Position -= 2;
+                    return bytes.ToArray();
+                }
                 bytes.AddRange(b);
                 //Looking for next byte != 0
-                while (val != SUBPART)
+                while (val != SubPart)
                 {
                     b = ReadBytes(reader, 1, endian);
                     val = b[0];
-                    if (val != SUBPART)
+                    if (val != SubPart)
                         bytes.AddRange(b);
                     else
                     {
@@ -1880,471 +1828,13 @@ namespace WillowTree
                 return bytes.ToArray();
             }
         }
-        public class WeaponPart : Part
-        {
-            public override string Init(BinaryReader reader, ByteOrder endian, BankEntry entry, bool last)
-            {
-                var category = base.Init(reader, endian, entry, last);
-                switch (category)
-                {
-                    case "Manufacturers":
-                        UInt32 temp = (UInt32)ReadInt32(reader, endian);
-                        entry.Quality = (Int16)(temp % (UInt32)65536);
-                        entry.Level = (Int16)(temp / (UInt32)65536);
-                        break;
-                    case "Title":
-                        ExtraData = ReadBytes(reader, 13, endian);//??
-                        if (last)
-                            break;
-                        var padding = SearchNextItem(reader, endian);
-                        if (padding != null)
-                        {
-                            if (ExtraData == null)
-                                ExtraData = padding;
-                            else
-                                ExtraData = ExtraData.Concat(padding).ToArray();
-                        }
-                        break;
-                    default:
-                        break;
-                }
-
-                return category;
-            }
-    }
-
-        public class ItemPart : Part
-        {
-            public override string Init(BinaryReader reader, ByteOrder endian, BankEntry entry, bool last)
-            {
-                var category = base.Init(reader, endian, entry, last);
-                switch (category)
-                {
-                    case "Manufacturers":
-                        UInt32 temp = (UInt32)ReadInt32(reader, endian);
-                        entry.Quality = (Int16)(temp % (UInt32)65536);
-                        entry.Level = (Int16)(temp / (UInt32)65536);
-                        break;
-                    case "Title":
-                        ExtraData = ReadBytes(reader, 10, endian);//Unknown
-                        if (last)
-                            break;
-                        var padding = SearchNextItem(reader, endian);
-                        if (padding != null)
-                        {
-                            if (ExtraData == null)
-                                ExtraData = padding;
-                            else
-                                ExtraData = ExtraData.Concat(padding).ToArray();
-                        }
-                        break;
-                    default:
-                        break;
-                }
-                //var padding = PaddingShort(reader, endian);
-                //if (padding != null)
-                //{
-                //    if (ExtraData == null)
-                //        ExtraData = padding;
-                //    else
-                //        ExtraData = ExtraData.Concat(padding).ToArray();
-                //}
-                return category;
-            }
-        }
-
-        public sealed class BankEntry
-        {
-            public Byte TypeId;
-            public List<IPart> Parts = new List<IPart>();
-            public Int32 Quantity; //AmmoOrQuantity
-            public Byte Equipped;
-            public Int16 Quality;
-            public Int16 Level;
-            public byte[] padding;
-
-            public void PrintParts()
-            {
-                foreach (var part in Parts)
-                {
-                    Console.WriteLine(part.Name);
-                }
-            }
-
-            public byte[] GetBytes(ByteOrder endian)
-            {
-                var bytes = new List<byte>();
-
-                bytes.Add(TypeId);
-                for (int i = 0; i < Parts.Count; i++)
-                {
-                    bytes.AddRange(Parts[i].GetBytes(endian, this, i));
-                }
-
-                return bytes.ToArray();
-            }
-        }
-
-
-        public enum BankEntryType
-        {
-            Item,
-            Weapon,
-            Unknown
-        }
-
-        private static string ReadBankEntryPart(BinaryReader reader, ByteOrder endian, int size)
-        {
-            string partName = "";
-            for (int i = 0; i < (size == 8 ? 4 : 3); i++)
-            {
-                var tmp = ReadString(reader, endian);
-                if (i != 0)
-                    partName += "." + tmp;
-                else
-                    partName += tmp;
-            }
-
-            return partName;
-        }
-
-        private static string[] checkItemIntegrity = new string[9]
-        {
-            "A",
-            "",
-            "Manufacturers",
-            "Body",
-            "LeftSide",
-            "RightSide",
-            "ManufacturerMaterials",
-            "Prefix",
-            "Title"
-        };
-
-        private void BankEntryParseItem(BinaryReader reader, out BankEntry entry, bool last)
-        {
-            entry = new BankEntry();
-            //Read PartName
-            //
-            //Type of Item
-            //Gear
-            //Manufacturer
-            //Body
-            //Left Side
-            //Right Side
-            //Material (Optional)
-            //Prefix
-            //Title
-            var category = "";
-            while (category != "Title")
-            {
-                Part part = new ItemPart();
-                category = part.Init(reader, EndianWSG, entry, last);
-                entry.Parts.Add(part);
-            }
-
-            //for (int i = 0; i < 9; i++)
-            //{
-            //    category = entry.Parts[i].Name.Split('.')[1].Split('_')[0];
-            //    if (checkItemIntegrity[i] != category && i != 1)
-            //    {
-            //        Console.WriteLine(checkItemIntegrity[i] + "/" + category);
-            //        var part = new ItemPart
-            //        {
-            //            Name = "None"
-            //        };
-            //        entry.Parts.Insert(i, part);
-            //    }
-            //}
-
-            //entry.PrintParts();
-        }
-        private static string[] checkWeaponIntegrity = new string[14]
-        {
-            "a",
-            "weapons",
-            "manufacturers",
-            "body",
-            "grip",
-            "mag",
-            "barrel",
-            "sight",
-            "stock",
-            "action",
-            "acc",
-            "material",
-            "prefix",
-            "title"
-        };
-        private void BankEntryParseWeapon(BinaryReader reader, out BankEntry entry, bool last)
-        {
-            entry = new BankEntry();
-            var category = "";
-            while (category != "Title")
-            {
-                Part part = new WeaponPart();
-                category = part.Init(reader, EndianWSG, entry, last);
-                entry.Parts.Add(part);
-            }
-
-            //for (int i = 0; i < 14; i++)
-            //{
-            //    category = entry.Parts[i].Name.ToLower();
-            //    if (!category.Contains(checkWeaponIntegrity[i]))
-            //    {
-            //        Console.WriteLine(checkWeaponIntegrity[i] + "/" + category);
-            //        var part = new WeaponPart
-            //        {
-            //            Name = "None"
-            //        };
-            //        entry.Parts.Insert(i, part);
-            //    }
-            //}
-            
-            //entry.PrintParts();
-        }
-
-        private BankEntryType CheckEntryType(BinaryReader reader)
-        {
-            var t = reader.ReadByte();
-            switch (t)
-            {
-                case 1:
-                    return BankEntryType.Weapon;
-                case 2:
-                    return BankEntryType.Item;
-                default:
-                    return BankEntryType.Unknown;
-            }
-        }
 
         private BankEntry CreateBankEntry(BinaryReader reader, bool last)
         {
-            //Check entry type
-            var entryType = CheckEntryType(reader);
-
             //Create new entry
-            BankEntry entry;
-
-            //Select the right parsing function
-            switch (entryType)
-            {
-                case BankEntryType.Item:
-                    BankEntryParseItem(reader, out entry, last);
-                    entry.TypeId = 2;
-                    return entry;
-                case BankEntryType.Weapon:
-                    BankEntryParseWeapon(reader, out entry, last);
-                    entry.TypeId = 1;
-                    return entry;
-                case BankEntryType.Unknown:
-                    break;
-                default:
-                    break;
-            }
-            return null;
-        }
-
-        private static string ReadBankString(BinaryReader reader, ByteOrder EndianWSG)
-        {
-            byte subObjectMask = reader.ReadByte();
-            //if ((subObjectMask != 32) && (subObjectMask != 0))
-            //    throw new FileFormatException("Bank string has an unknown sub-object mask.  Mask = " + subObjectMask);
-
-            string composed = ReadString(reader, EndianWSG);
-            bool isPreviousSubObject = (subObjectMask & 1) == 1;
-            subObjectMask >>= 1;
-
-            for (int i = 1; i < 6; i++)
-            {
-                string substring = ReadString(reader, EndianWSG);
-                if (!string.IsNullOrEmpty(substring))
-                {
-                    if (isPreviousSubObject)
-                        if (string.IsNullOrEmpty(composed))
-                            composed = substring;
-                        else
-                            composed += ":" + substring;
-                    else
-                        if (string.IsNullOrEmpty(composed))
-                            composed = substring;
-                        else
-                            composed += "." + substring;
-                }
-
-                isPreviousSubObject = (subObjectMask & 1) == 1;
-                subObjectMask >>= 1;
-            }
-
-            return composed;
-        }
-
-        private static void WriteBankString(BinaryWriter bw, string value, ByteOrder Endian)
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                // Endianness does not matter here.
-                bw.Write((byte)0);
-                bw.Write(0);
-                bw.Write(0);
-                bw.Write(0);
-                bw.Write(0);
-                bw.Write(0);
-                bw.Write(0);
-            }
-            else
-            {
-                byte subObjectMask = 32;
-                string[] pathComponentNames = value.Split('.');
-
-                bw.Write(subObjectMask);
-
-                // Write the empty strings first.
-                // Endianness does not matter here.
-                for (int j = pathComponentNames.Length; j < 6; j++)
-                    bw.Write(0);
-
-                // Then write the strings that are not empty.
-                for (int j = 0; j < pathComponentNames.Length; j++)
-                    Write(bw, pathComponentNames[j], Endian);
-            }
-        }
-
-        //private BankEntry ReadBankEntry(BinaryReader br, ByteOrder endian)
-        //{
-        //    Console.WriteLine("Bank");
-        //    BankEntry entry = new BankEntry();
-        //    int partCount;
-        //    entry.TypeId = br.ReadByte();
-
-        //    switch (entry.TypeId)
-        //    {
-        //        case 1:
-        //        case 2:
-        //            break;
-        //        default:
-        //            throw new FormatException("Bank entry to be written has invalid Type ID.  TypeId = " + entry.TypeId);
-        //    }
-
-        //    for (int i = 0; i < 3; i++)
-        //    {
-        //        var s = ReadString(br, endian);
-        //        Console.WriteLine(s);
-        //        entry.Parts.Add(s);
-        //    }
-                
-
-        //    UInt32 temp = (UInt32)ReadInt32(br, endian);
-        //    entry.Quality = (Int16)(temp % (UInt32)65536);
-        //    entry.Level = (Int16)(temp / (UInt32)65536);
-
-        //    switch (entry.TypeId)
-        //    {
-        //        case 1:
-        //            partCount = 14;
-        //            break;
-        //        case 2:
-        //            partCount = 9;
-        //            break;
-        //        default:
-        //            partCount = 0;
-        //            break;
-        //    }
-
-        //    for (int i = 3; i < partCount; i++)
-        //        entry.Parts.Add(ReadBankString(br, endian));
-
-        //    byte[] Footer = br.ReadBytes(10);
-        //    // da_fileserver's investigation has led him to believe the footer bytes are:
-        //    // (Int)GameStage - default 0
-        //    // (Int)AwesomeLevel - default 0
-        //    // (Byte)Equipped - default 0
-        //    // (Byte)DropOnDeath - default 1 (this is whether an npc would drop it when it dies not you)
-        //    // (Byte)ShopsHaveInfiniteQuantity - default 0
-        //    // matt911 - It seems apparent that this table is used for more than just the bank inventory 
-        //    // in the game.  None of the values are stored in the inventory part of the savegame
-        //    // except Equipped and even that will be updated immediately when you take the item
-        //    // out of the bank.  I've never seen any of these with anything except the default value
-        //    // in the bank except Equipped so I will store that in case it is not what we think it
-        //    // is and it is important, but I am doubtful that it is.
-        //    for (int i = 0; i < 7; i++)
-        //        System.Diagnostics.Debug.Assert(Footer[i] == 0);
-        //    System.Diagnostics.Debug.Assert(Footer[9] == 1); // This might be 1 for a health pack
-        //    entry.Equipped = Footer[8];
-
-        //    switch (entry.TypeId)
-        //    {
-        //        case 1: // weapon
-        //            entry.Quantity = ReadInt32(br, endian);
-        //            break;
-        //        case 2: // item
-        //            entry.Quantity = (int)br.ReadByte();
-        //            break;
-        //        default:
-        //            entry.Quantity = 0;
-        //            break;
-        //    }
-        //    if (RevisionNumber > 38)
-        //    {
-        //        RawDataInfo rd = null;
-        //        do
-        //        {
-        //            rd = CheckPadding(br, 1);
-        //            if (entry.padding == null)
-        //                entry.padding = rd.data;
-        //            else
-        //                entry.padding = entry.padding.Concat(rd.data).ToArray();
-        //        } while (rd.nextValue == 0);
-        //    }
-        //    return entry;
-        //}
-        private static void WriteBankEntry(BinaryWriter bw, BankEntry entry, ByteOrder Endian, int version)
-        {
-            if (entry.Parts.Count < 3)
-                throw new FormatException("Bank entry has an invalid part count. Parts.Count = " + entry.Parts.Count);
-
-            bw.Write(entry.TypeId);
-
-            switch (entry.TypeId)
-            {
-                case 1:
-                case 2:
-                    break;
-                default:
-                    throw new FormatException("Bank entry to be written has an invalid Type ID.  TypeId = " + entry.TypeId);
-            }
-
-            //for (int i = 0; i < 3; i++)
-            //    WriteBankString(bw, entry.Parts[i], Endian);
-
-            //UInt32 grade = (UInt16)entry.Quality + (UInt16)entry.Level * (UInt32)65536;
-
-            //Write(bw, (Int32)grade, Endian);
-
-            //for (int i = 3; i < entry.Parts.Count; i++)
-            //    WriteBankString(bw, entry.Parts[i], Endian);
-
-            // see ReadBankEntry for notes about the footer bytes
-            Byte[] Footer = new Byte[10] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
-            Footer[8] = entry.Equipped;
-            bw.Write(Footer);
-
-            switch (entry.TypeId)
-            {
-                case 1: // weapon
-                    Write(bw, entry.Quantity, Endian);
-                    break;
-                case 2: // item
-                    bw.Write((Byte)entry.Quantity);
-                    break;
-                default:
-                    throw new FormatException("Bank entry to be written has an invalid Type ID.  TypeId = " + entry.TypeId);
-            }
-            if (version > 38)
-            {
-                //if (entry.padding)
-                //    bw.Write(entry.padding);
-            }
+            BankEntry entry = new BankEntry();
+            entry.Deserialize(reader, EndianWsg, Dlc.BankInventory.Count == 0 ? null : Dlc.BankInventory[Dlc.BankInventory.Count - 1]);
+            return entry;
         }
     }
 }

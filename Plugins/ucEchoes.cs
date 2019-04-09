@@ -170,8 +170,8 @@ namespace WillowTree.Plugins
                 XmlNode node = echonodes[i];
                 string name = node.GetElement("Name", "");
                 ee.Name = name;
-                ee.DLCValue1 = node.GetElementAsInt("DLCValue1", 0);
-                ee.DLCValue2 = node.GetElementAsInt("DLCValue2", 0);
+                ee.DlcValue1 = node.GetElementAsInt("DLCValue1", 0);
+                ee.DlcValue2 = node.GetElementAsInt("DLCValue2", 0);
 
                 // Add the echo to the list
                 et.Echoes.Add(ee);
@@ -191,7 +191,7 @@ namespace WillowTree.Plugins
         public void MergeFromSaveEchoes(string filename, int index)
         {
             WillowSaveGame OtherSave = new WillowSaveGame();
-            OtherSave.LoadWSG(filename);
+            OtherSave.LoadWsg(filename);
 
             if (OtherSave.NumberOfEchoLists - 1 < index)
                 return;
@@ -254,8 +254,8 @@ namespace WillowTree.Plugins
                 // Create a new echo entry an populate it from the node
                 WillowSaveGame.EchoEntry ee = new WillowSaveGame.EchoEntry();
                 ee.Name = name;
-                ee.DLCValue1 = node.GetElementAsInt("DLCValue1", 0);
-                ee.DLCValue2 = node.GetElementAsInt("DLCValue2", 0);
+                ee.DlcValue1 = node.GetElementAsInt("DLCValue1", 0);
+                ee.DlcValue2 = node.GetElementAsInt("DLCValue2", 0);
 
                 // Add the echo entry to the echo list
                 et.Echoes.Add(ee);
@@ -290,8 +290,8 @@ namespace WillowTree.Plugins
                 WillowSaveGame.EchoEntry ee = et.Echoes[i];
                 writer.WriteStartElement("Echo");
                 writer.WriteElementString("Name", ee.Name);
-                writer.WriteElementString("DLCValue1", ee.DLCValue1.ToString());
-                writer.WriteElementString("DLCValue2", ee.DLCValue2.ToString());
+                writer.WriteElementString("DLCValue1", ee.DlcValue1.ToString());
+                writer.WriteElementString("DLCValue2", ee.DlcValue2.ToString());
                 writer.WriteEndElement();
             }
 
@@ -333,8 +333,8 @@ namespace WillowTree.Plugins
                 WillowSaveGame.EchoEntry ee = et.Echoes[i];
                 writer.WriteStartElement("Echo");
                 writer.WriteElementString("Name", ee.Name);
-                writer.WriteElementString("DLCValue1", ee.DLCValue1.ToString());
-                writer.WriteElementString("DLCValue2", ee.DLCValue2.ToString());
+                writer.WriteElementString("DLCValue1", ee.DlcValue1.ToString());
+                writer.WriteElementString("DLCValue2", ee.DlcValue2.ToString());
                 writer.WriteEndElement();
             }
 
@@ -396,7 +396,7 @@ namespace WillowTree.Plugins
 
                 try
                 {
-                    OtherSave.LoadWSG(tempOpen.FileName());
+                    OtherSave.LoadWsg(tempOpen.FileName());
                 }
                 catch { MessageBox.Show("Couldn't open the other save file."); return; }
 
@@ -494,8 +494,8 @@ namespace WillowTree.Plugins
             // TODO: These values shouldn't always be zero, but the data doesn't
             // exist in the data files yet.  When the proper data is in the data
             // file then it needs to be looked up here.
-            ee.DLCValue1 = 0;
-            ee.DLCValue2 = 0;
+            ee.DlcValue1 = 0;
+            ee.DlcValue2 = 0;
 
             // Add the new echo to the echo list
             WillowSaveGame.EchoTable et = CurrentWSG.EchoLists[index];
@@ -601,7 +601,7 @@ namespace WillowTree.Plugins
             if (index == -1 || EchoTree.SelectedNode.Parent == EchoTree.Root)
                 return;
 
-            CurrentWSG.EchoLists[index].Echoes[EchoTree.SelectedNode.Index].DLCValue1 = (int)EchoDLCValue1.Value;
+            CurrentWSG.EchoLists[index].Echoes[EchoTree.SelectedNode.Index].DlcValue1 = (int)EchoDLCValue1.Value;
         }
 
         private void EchoDLCValue2_ValueChanged(object sender, EventArgs e)
@@ -610,7 +610,7 @@ namespace WillowTree.Plugins
             if (index == -1 || EchoTree.SelectedNode.Parent == EchoTree.Root)
                 return;
 
-            CurrentWSG.EchoLists[index].Echoes[EchoTree.SelectedNode.Index].DLCValue2 = (int)EchoDLCValue2.Value;
+            CurrentWSG.EchoLists[index].Echoes[EchoTree.SelectedNode.Index].DlcValue2 = (int)EchoDLCValue2.Value;
         }
 
         private void UIClearEchoPanel()
@@ -633,8 +633,8 @@ namespace WillowTree.Plugins
 
             WillowSaveGame.EchoEntry ee = CurrentWSG.EchoLists[index].Echoes[EchoTree.SelectedNode.Index];
 
-            Util.SetNumericUpDown(EchoDLCValue1, ee.DLCValue1);
-            Util.SetNumericUpDown(EchoDLCValue2, ee.DLCValue2);
+            Util.SetNumericUpDown(EchoDLCValue1, ee.DlcValue1);
+            Util.SetNumericUpDown(EchoDLCValue2, ee.DlcValue2);
             EchoString.Text = ee.Name;
         }
 

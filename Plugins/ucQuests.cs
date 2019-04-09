@@ -194,8 +194,8 @@ namespace WillowTree.Plugins
                 WillowSaveGame.QuestEntry qe = new WillowSaveGame.QuestEntry();
                 qe.Name = node.GetElement("Name", "");
                 qe.Progress = node.GetElementAsInt("Progress", 0);
-                qe.DLCValue1 = node.GetElementAsInt("DLCValue1", 0);
-                qe.DLCValue2 = node.GetElementAsInt("DLCValue2", 0);
+                qe.DlcValue1 = node.GetElementAsInt("DLCValue1", 0);
+                qe.DlcValue2 = node.GetElementAsInt("DLCValue2", 0);
                     
                 int objectiveCount = node.GetElementAsInt("Objectives", 0);
                 qe.NumberOfObjectives = objectiveCount;
@@ -227,7 +227,7 @@ namespace WillowTree.Plugins
         public void MergeFromSaveQuests(string filename, int index)
         {
             WillowSaveGame OtherSave = new WillowSaveGame();
-            OtherSave.LoadWSG(filename);
+            OtherSave.LoadWsg(filename);
 
             if (OtherSave.NumberOfQuestLists - 1 < index)
                 return;
@@ -336,8 +336,8 @@ namespace WillowTree.Plugins
                     // This quest progress is further advanced than the existing one
                     // so copy all its values.
                     old.Progress = progress;
-                    old.DLCValue1 = node.GetElementAsInt("DLCValue1", 0);
-                    old.DLCValue2 = node.GetElementAsInt("DLCValue2", 0);
+                    old.DlcValue1 = node.GetElementAsInt("DLCValue1", 0);
+                    old.DlcValue2 = node.GetElementAsInt("DLCValue2", 0);
 
                     int newObjectiveCount = node.GetElementAsInt("Objectives", 0);
                     old.NumberOfObjectives = newObjectiveCount;
@@ -359,8 +359,8 @@ namespace WillowTree.Plugins
                 WillowSaveGame.QuestEntry qe = new WillowSaveGame.QuestEntry();
                 qe.Name = name;
                 qe.Progress = progress;
-                qe.DLCValue1 = node.GetElementAsInt("DLCValue1", 0);
-                qe.DLCValue2 = node.GetElementAsInt("DLCValue2", 0);
+                qe.DlcValue1 = node.GetElementAsInt("DLCValue1", 0);
+                qe.DlcValue2 = node.GetElementAsInt("DLCValue2", 0);
 
                 int objectiveCount = node.GetElementAsInt("Objectives", 0);
                 qe.NumberOfObjectives = objectiveCount;
@@ -411,8 +411,8 @@ namespace WillowTree.Plugins
                 writer.WriteElementString("Name", qe.Name);
                 //                writer.WriteString(et.QuestStrings[i]);
                 writer.WriteElementString("Progress", qe.Progress.ToString());
-                writer.WriteElementString("DLCValue1", qe.DLCValue1.ToString());
-                writer.WriteElementString("DLCValue2", qe.DLCValue2.ToString());
+                writer.WriteElementString("DLCValue1", qe.DlcValue1.ToString());
+                writer.WriteElementString("DLCValue2", qe.DlcValue2.ToString());
                 writer.WriteElementString("Objectives", qe.NumberOfObjectives.ToString());
 
                 int objectiveCount = qe.NumberOfObjectives;
@@ -464,8 +464,8 @@ namespace WillowTree.Plugins
                 writer.WriteElementString("Name", qe.Name);
                 writer.WriteElementString("Progress", qe.Progress.ToString());
                 //                writer.WriteString(et.QuestStrings[i]);
-                writer.WriteElementString("DLCValue1", qe.DLCValue1.ToString());
-                writer.WriteElementString("DLCValue2", qe.DLCValue2.ToString());
+                writer.WriteElementString("DLCValue1", qe.DlcValue1.ToString());
+                writer.WriteElementString("DLCValue2", qe.DlcValue2.ToString());
                 writer.WriteElementString("Objectives", qe.NumberOfObjectives.ToString());
 
                 int objectiveCount = qe.NumberOfObjectives;
@@ -507,8 +507,8 @@ namespace WillowTree.Plugins
             // missions that are from the DLCs.  The data files dont
             // contain the values they should be yet, so once that data
             // is added to the data files these should be changed.
-            qe.DLCValue1 = 0;
-            qe.DLCValue2 = 0;
+            qe.DlcValue1 = 0;
+            qe.DlcValue2 = 0;
 
             List<WillowSaveGame.QuestObjective> objectives = new List<WillowSaveGame.QuestObjective>();
 
@@ -645,8 +645,8 @@ namespace WillowTree.Plugins
                     // missions that are from the DLCs.  The data files dont
                     // contain the values they should be yet, so once that data
                     // is added to the data files these should be changed.
-                    qe.DLCValue1 = 0;
-                    qe.DLCValue2 = 0;
+                    qe.DlcValue1 = 0;
+                    qe.DlcValue2 = 0;
 
                     List<WillowSaveGame.QuestObjective> objectives = new List<WillowSaveGame.QuestObjective>();
 
@@ -838,8 +838,8 @@ namespace WillowTree.Plugins
                 Util.SetNumericUpDown(ObjectiveValue, 0);
                 QuestSummary.Text = questData.GetElement("MissionSummary", "");
                 QuestDescription.Text = questData.GetElement("MissionDescription", "");
-                Util.SetNumericUpDown(QuestDLCValue1, qe.DLCValue1);
-                Util.SetNumericUpDown(QuestDLCValue2, qe.DLCValue2);
+                Util.SetNumericUpDown(QuestDLCValue1, qe.DlcValue1);
+                Util.SetNumericUpDown(QuestDLCValue2, qe.DlcValue2);
             }
             catch 
             { 
@@ -999,7 +999,7 @@ namespace WillowTree.Plugins
 
                 try
                 {
-                    OtherSave.LoadWSG(tempOpen.FileName());
+                    OtherSave.LoadWsg(tempOpen.FileName());
                 }
                 catch { return; }
 
@@ -1162,7 +1162,7 @@ namespace WillowTree.Plugins
             if (index == -1 || QuestTree.SelectedNode.Parent == QuestTree.Root)
                 return;
 
-            CurrentWSG.QuestLists[index].Quests[QuestTree.SelectedNode.Index].DLCValue1 = (int)QuestDLCValue1.Value;
+            CurrentWSG.QuestLists[index].Quests[QuestTree.SelectedNode.Index].DlcValue1 = (int)QuestDLCValue1.Value;
         }
 
         private void QuestDLCValue2_ValueChanged(object sender, EventArgs e)
@@ -1171,7 +1171,7 @@ namespace WillowTree.Plugins
             if (index == -1 || QuestTree.SelectedNode.Parent == QuestTree.Root)
                 return;
 
-            CurrentWSG.QuestLists[index].Quests[QuestTree.SelectedNode.Index].DLCValue2 = (int)QuestDLCValue2.Value;
+            CurrentWSG.QuestLists[index].Quests[QuestTree.SelectedNode.Index].DlcValue2 = (int)QuestDLCValue2.Value;
         }
     }
 }

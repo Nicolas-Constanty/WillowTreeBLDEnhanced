@@ -1,6 +1,6 @@
 ﻿/*  This file is part of WillowTree#
  * 
- *  Copyright (C) 2011 Matthew Carter <matt911@users.sf.net>
+ *  Copyright (C) 2011-2019 Matthew Carter <matt911@users.sf.net>
  *  Copyright (C) 2010, 2011 XanderChaos
  *  Copyright (C) 2011 Thomas Kaiser
  *  Copyright (C) 2010 JackSchitt
@@ -51,9 +51,8 @@ namespace WillowTree.Inventory
         public int QualityIndex;
         public int EquippedSlot;
         public int LevelIndex;
-
-        public byte[] padding;//Unknown datas
-        public List<WillowSaveGame.IPart> PartsBank;
+        public int IsJunk;
+        public int IsLocked;
 
         // User data.  These are user defined fields that are saved in the
         // locker for user notes.  They are not necessary to define an item
@@ -109,7 +108,10 @@ namespace WillowTree.Inventory
             this.LevelIndex = node.GetElementAsInt("Level");
             this.QualityIndex = node.GetElementAsInt("Quality");
             this.Quantity = node.GetElementAsInt("RemAmmo_Quantity");
+            this.IsJunk = node.GetElementAsInt("IsJunk", 0);
+            this.IsLocked = node.GetElementAsInt("IsLocked", 0);
             this.EquippedSlot = 0;
+
 
             try
             {
@@ -162,15 +164,14 @@ namespace WillowTree.Inventory
             return false;
         }
 
-        public InventoryEntry(byte inType, List<string> inParts, List<int> inValues, List<WillowSaveGame.IPart> parts)
+        public InventoryEntry(byte inType, List<string> inParts, List<int> inValues)
         {
             // This makes a shallow copy of elements.
             // Parts and Values still link to the input structures
             this.Type = inType;
             this.Parts = inParts;
-            this.PartsBank = parts;
 
-            ConvertValues(inValues, inParts[0], out this.UsesBigLevel, out this.Quantity, out this.QualityIndex, out this.EquippedSlot, out this.LevelIndex);
+            ConvertValues(inValues, inParts[0], out this.UsesBigLevel, out this.Quantity, out this.QualityIndex, out this.EquippedSlot, out this.LevelIndex, out this.IsJunk, out this.IsLocked);
 
             this.Rating = "";
             this.Description = "";
@@ -182,33 +183,6 @@ namespace WillowTree.Inventory
 
             BuildName();
         }
-
-        public InventoryEntry(byte inType, List<string> inParts, List<int> inValues, byte[] padding)
-        {
-            // This makes a shallow copy of elements.
-            // Parts and Values still link to the input structures
-            this.Type = inType;
-            this.Parts = inParts;
-
-            if (padding != null)
-            {
-                this.padding = new byte[padding.Length];
-                Array.Copy(padding, this.padding, padding.Length);
-            }
-
-            ConvertValues(inValues, inParts[0], out this.UsesBigLevel, out this.Quantity, out this.QualityIndex, out this.EquippedSlot, out this.LevelIndex);
-
-            this.Rating = "";
-            this.Description = "";
-
-            if (this.Type == InventoryType.Weapon)
-                RecalculateDataWeapon();
-            else
-                RecalculateDataItem();
-
-            BuildName();
-        }
-
         public InventoryEntry(InventoryEntry copyFrom)
         {   // This constructor makes a deep copy of all elements.
             // Parts are new copies of the input structures
@@ -220,6 +194,8 @@ namespace WillowTree.Inventory
             this.QualityIndex = copyFrom.QualityIndex;
             this.EquippedSlot = copyFrom.EquippedSlot;
             this.LevelIndex = copyFrom.LevelIndex;
+            this.IsJunk = copyFrom.IsJunk;
+            this.IsLocked = copyFrom.IsLocked;
 
             this.Rating = copyFrom.Rating;
             this.Description = copyFrom.Description;
@@ -309,7 +285,7 @@ namespace WillowTree.Inventory
             Model += Parse.AsInt(db.GetPartAttribute(this.Parts[3], "PartNumberAddend"), 0);           // Number from mag
 
             this.Rarity = Parse.AsInt(db.GetPartAttribute(this.Parts[1], "BaseRarity"), 0);
-            for (int i = 2; i < this.Parts.Count; i++)
+            for (int i = 2; i < 9; i++)
             {
                 int partrarity = db.GetPartRarity(this.Parts[i]);
                 //                    if ((partrarity == 50) && (i < 10) && (Parts[i].StartsWith("dlc3") == false))
@@ -471,7 +447,7 @@ namespace WillowTree.Inventory
             return partcount;
         }
 
-        public static void ConvertValues(List<int> values, string itemgradePart, out bool usesBigLevel, out int quantity, out int qualityIndex, out int equippedSlot, out int levelIndex)
+        public static void ConvertValues(List<int> values, string itemgradePart, out bool usesBigLevel, out int quantity, out int qualityIndex, out int equippedSlot, out int levelIndex, out int isJunk, out int isLocked)
         {
             usesBigLevel = ItemgradePartUsesBigLevel(itemgradePart);
             if (usesBigLevel)
@@ -488,15 +464,26 @@ namespace WillowTree.Inventory
 
             quantity = values[0];
             equippedSlot = values[2];
+
+            if (values.Count > 4)
+            {
+                isJunk = values[4];
+                isLocked = values[5];
+            }
+            else
+            {
+                isJunk = 0;
+                isLocked = 0;
+            }
         }
 
-        public static List<int> CalculateValues(int quantity, int qualityIndex, int equippedSlot, int levelIndex, string itemgradePart)
+        public static List<int> CalculateValues(int quantity, int qualityIndex, int equippedSlot, int levelIndex, int isJunk, int isLocked, string itemgradePart)
         {
             bool usesBigLevel = ItemgradePartUsesBigLevel(itemgradePart);
-            return CalculateValues(quantity, qualityIndex, equippedSlot, levelIndex, usesBigLevel);
+            return CalculateValues(quantity, qualityIndex, equippedSlot, levelIndex, usesBigLevel, isJunk, isLocked);
         }
 
-        public static List<int> CalculateValues(int quantity, int qualityIndex, int equippedSlot, int levelIndex, bool usesBigLevel)
+        public static List<int> CalculateValues(int quantity, int qualityIndex, int equippedSlot, int levelIndex, bool usesBigLevel, int isJunk, int isLocked)
         {
             if (usesBigLevel)
             {
@@ -504,7 +491,9 @@ namespace WillowTree.Inventory
                     quantity,
                     (Int16)((uint)levelIndex % (uint)65536),
                     equippedSlot,
-                    (Int16)((uint)levelIndex / (uint)65536)
+                    (Int16)((uint)levelIndex / (uint)65536),
+                    isJunk,
+                    isLocked
                 };
             }
             else
@@ -513,14 +502,16 @@ namespace WillowTree.Inventory
                     quantity,
                     qualityIndex,
                     equippedSlot,
-                    levelIndex
+                    levelIndex,
+                    isJunk,
+                    isLocked
                 };
             }
         }
 
         public List<int> GetValues()
         {
-            return CalculateValues(this.Quantity, this.QualityIndex, this.EquippedSlot, this.LevelIndex, this.UsesBigLevel);
+            return CalculateValues(this.Quantity, this.QualityIndex, this.EquippedSlot, this.LevelIndex, this.UsesBigLevel, this.IsJunk, this.IsLocked);
         }
 
         public static InventoryEntry ImportFromText(string text, byte inType)
@@ -553,7 +544,7 @@ namespace WillowTree.Inventory
                         throw new FormatException();
                 }
 
-                for (int i = 0; i < 4; i++)
+                for (int i = 0; i < WillowSaveGame.ExportValuesCount; i++)
                     values.Add(Parse.AsInt(InOutParts[Progress + i]));
                 values[2] = 0;  // set equipped slot to 0
             }
@@ -563,7 +554,7 @@ namespace WillowTree.Inventory
                 return null;
             }
 
-            return new InventoryEntry(inType, parts, values, new byte[0]);
+            return new InventoryEntry(inType, parts, values);
         }
         
         // TODO: This doesn't indent properly in most cases.  It should have the 
@@ -589,6 +580,8 @@ namespace WillowTree.Inventory
             writer.WriteElementString("RemAmmo_Quantity", this.Quantity.ToString());
             writer.WriteElementString("Quality", this.QualityIndex.ToString());
             writer.WriteElementString("Level", this.LevelIndex.ToString());
+            writer.WriteElementString("IsJunk", this.IsJunk.ToString());
+            writer.WriteElementString("IsLocked", this.IsLocked.ToString());
 
             writer.WriteElementString("Rarity", this.Rarity.ToString());
             writer.WriteElementString("EffectiveLevel", this.EffectiveLevel.ToString());

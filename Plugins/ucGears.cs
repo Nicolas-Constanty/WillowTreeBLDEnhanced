@@ -273,11 +273,12 @@ namespace WillowTree.Plugins
 
             for (int Progress = 0; Progress < PartsGear.Items.Count; Progress++)
                 InOutParts.Add((string)PartsGear.Items[Progress]);
-
+            
             List<int> values = InventoryEntry.CalculateValues((int)QuantityGear.Value,
-                (int)QualityGear.Value, (int)EquippedSlotGear.SelectedIndex, (int)LevelIndexGear.Value, ((string)PartsGear.Items[0]));
+                (int)QualityGear.Value, (int)EquippedSlotGear.SelectedIndex, (int)LevelIndexGear.Value, (int)JunkGear.Value, (int)LockedGear.Value, ((string)PartsGear.Items[0]));
 
-            for (int i = 0; i < 4; i++)
+            int valueCount = WillowSaveGame.ExportValuesCount;
+            for (int i = 0; i < valueCount; i++)
                 InOutParts.Add(values[i].ToString());
 
             return string.Join("\r\n", InOutParts.ToArray()) + "\r\n";
@@ -381,6 +382,8 @@ namespace WillowTree.Plugins
             QualityGear.Value = gear.QualityIndex;
             EquippedSlotGear.SelectedIndex = gear.EquippedSlot;
             LevelIndexGear.Value = gear.LevelIndex;
+            JunkGear.Value = gear.IsJunk;
+            LockedGear.Value = gear.IsLocked;
 
             if (PartsGear.Items.Count > OldPartIndex)
                 PartsGear.SelectedIndex = OldPartIndex;
@@ -407,6 +410,8 @@ namespace WillowTree.Plugins
             gear.QualityIndex = QualityGear.Value;
             gear.EquippedSlot = EquippedSlotGear.SelectedIndex;
             gear.LevelIndex = LevelIndexGear.Value;
+            gear.IsJunk = (int)JunkGear.Value;
+            gear.IsLocked = (int)LockedGear.Value;
 
             // Recalculate the gear stats
             if (GearTree.SelectedNode.GetEntry().Type == InventoryType.Weapon)

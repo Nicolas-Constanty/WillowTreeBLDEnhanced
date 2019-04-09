@@ -61,6 +61,7 @@ namespace WillowTree.Plugins
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.clearAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.copyToBackpackToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.copyToBankToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.duplicateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.moveToBackpackToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.purgeDuplicatesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -76,6 +77,10 @@ namespace WillowTree.Plugins
             this.lockerSearch = new WillowTree.CustomControls.WTTextBox();
             this.LockerTree = new WillowTree.CustomControls.WTTreeView();
             this.LockerPartsGroup = new WillowTree.CustomControls.WTGroupBox();
+            this.LockerLockedLabel = new WillowTree.CustomControls.WTLabel();
+            this.LockerJunkLabel = new WillowTree.CustomControls.WTLabel();
+            this.LockedLocker = new WillowTree.CustomControls.HexUpDown();
+            this.JunkLocker = new WillowTree.CustomControls.HexUpDown();
             this.QualityLocker = new WillowTree.CustomControls.WTSlideSelector();
             this.LevelIndexLocker = new WillowTree.CustomControls.WTSlideSelector();
             this.MenuLockerSelected = new WillowTree.CustomControls.WTMenuStrip();
@@ -99,11 +104,12 @@ namespace WillowTree.Plugins
             this.DescriptionLockerLabel = new WillowTree.CustomControls.WTLabel();
             this.DescriptionLocker = new WillowTree.CustomControls.WTTextBox();
             this.RatingLocker = new WillowTree.CustomControls.WTTextBox();
-            this.copyToBankToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.LockerTab.SuspendLayout();
             this.groupPanel13.SuspendLayout();
             this.MenuLocker.SuspendLayout();
             this.LockerPartsGroup.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.LockedLocker)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.JunkLocker)).BeginInit();
             this.MenuLockerSelected.SuspendLayout();
             this.groupPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.RemAmmoOverride)).BeginInit();
@@ -126,8 +132,8 @@ namespace WillowTree.Plugins
             // 
             // groupPanel13
             // 
-            this.groupPanel13.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)));
+            this.groupPanel13.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left)));
             this.groupPanel13.Controls.Add(this.MenuLocker);
             this.groupPanel13.Controls.Add(this.btnlockerSearch);
             this.groupPanel13.Controls.Add(this.lockerSearch);
@@ -172,14 +178,14 @@ namespace WillowTree.Plugins
             // weaponToolStripMenuItem
             // 
             this.weaponToolStripMenuItem.Name = "weaponToolStripMenuItem";
-            this.weaponToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
+            this.weaponToolStripMenuItem.Size = new System.Drawing.Size(115, 22);
             this.weaponToolStripMenuItem.Text = "Weapon";
             this.weaponToolStripMenuItem.Click += new System.EventHandler(this.NewWeaponLocker_Click);
             // 
             // itemToolStripMenuItem1
             // 
             this.itemToolStripMenuItem1.Name = "itemToolStripMenuItem1";
-            this.itemToolStripMenuItem1.Size = new System.Drawing.Size(118, 22);
+            this.itemToolStripMenuItem1.Size = new System.Drawing.Size(115, 22);
             this.itemToolStripMenuItem1.Text = "Item";
             this.itemToolStripMenuItem1.Click += new System.EventHandler(this.NewItemLocker_Click);
             // 
@@ -210,26 +216,26 @@ namespace WillowTree.Plugins
             // openLockerToolStripMenuItem
             // 
             this.openLockerToolStripMenuItem.Name = "openLockerToolStripMenuItem";
-            this.openLockerToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
+            this.openLockerToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
             this.openLockerToolStripMenuItem.Text = "Open Locker";
             this.openLockerToolStripMenuItem.Click += new System.EventHandler(this.OpenLocker_Click);
             // 
             // saveLockerAsToolStripMenuItem
             // 
             this.saveLockerAsToolStripMenuItem.Name = "saveLockerAsToolStripMenuItem";
-            this.saveLockerAsToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
+            this.saveLockerAsToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
             this.saveLockerAsToolStripMenuItem.Text = "Save Locker As";
             this.saveLockerAsToolStripMenuItem.Click += new System.EventHandler(this.ExportToXmlLocker_Click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(197, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(194, 6);
             // 
             // clearAllToolStripMenuItem
             // 
             this.clearAllToolStripMenuItem.Name = "clearAllToolStripMenuItem";
-            this.clearAllToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
+            this.clearAllToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
             this.clearAllToolStripMenuItem.Text = "Clear All";
             this.clearAllToolStripMenuItem.Click += new System.EventHandler(this.ClearAllLocker_Click);
             // 
@@ -237,29 +243,37 @@ namespace WillowTree.Plugins
             // 
             this.copyToBackpackToolStripMenuItem.Name = "copyToBackpackToolStripMenuItem";
             this.copyToBackpackToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+B";
-            this.copyToBackpackToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
+            this.copyToBackpackToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
             this.copyToBackpackToolStripMenuItem.Text = "Copy to Backpack";
             this.copyToBackpackToolStripMenuItem.Click += new System.EventHandler(this.CopyBackpack_Click);
+            // 
+            // copyToBankToolStripMenuItem
+            // 
+            this.copyToBankToolStripMenuItem.Name = "copyToBankToolStripMenuItem";
+            this.copyToBankToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+N";
+            this.copyToBankToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
+            this.copyToBankToolStripMenuItem.Text = "Copy to Bank";
+            this.copyToBankToolStripMenuItem.Click += new System.EventHandler(this.CopyBank_Click);
             // 
             // duplicateToolStripMenuItem
             // 
             this.duplicateToolStripMenuItem.Name = "duplicateToolStripMenuItem";
             this.duplicateToolStripMenuItem.ShortcutKeyDisplayString = "Ins";
-            this.duplicateToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
+            this.duplicateToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
             this.duplicateToolStripMenuItem.Text = "Duplicate";
             this.duplicateToolStripMenuItem.Click += new System.EventHandler(this.DuplicateLocker_Click);
             // 
             // moveToBackpackToolStripMenuItem
             // 
             this.moveToBackpackToolStripMenuItem.Name = "moveToBackpackToolStripMenuItem";
-            this.moveToBackpackToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
+            this.moveToBackpackToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
             this.moveToBackpackToolStripMenuItem.Text = "Move to Backpack";
             this.moveToBackpackToolStripMenuItem.Click += new System.EventHandler(this.MoveLocker_Click);
             // 
             // purgeDuplicatesToolStripMenuItem
             // 
             this.purgeDuplicatesToolStripMenuItem.Name = "purgeDuplicatesToolStripMenuItem";
-            this.purgeDuplicatesToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
+            this.purgeDuplicatesToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
             this.purgeDuplicatesToolStripMenuItem.Text = "Purge Duplicates";
             this.purgeDuplicatesToolStripMenuItem.Click += new System.EventHandler(this.PurgeDuplicatesLocker_Click);
             // 
@@ -285,21 +299,21 @@ namespace WillowTree.Plugins
             // ImportAllFromWeapons
             // 
             this.ImportAllFromWeapons.Name = "ImportAllFromWeapons";
-            this.ImportAllFromWeapons.Size = new System.Drawing.Size(146, 22);
+            this.ImportAllFromWeapons.Size = new System.Drawing.Size(143, 22);
             this.ImportAllFromWeapons.Text = "from Weapons";
             this.ImportAllFromWeapons.Click += new System.EventHandler(this.ImportAllFromWeaponsLocker_Click);
             // 
             // ImportAllFromItems
             // 
             this.ImportAllFromItems.Name = "ImportAllFromItems";
-            this.ImportAllFromItems.Size = new System.Drawing.Size(146, 22);
+            this.ImportAllFromItems.Size = new System.Drawing.Size(143, 22);
             this.ImportAllFromItems.Text = "from Items";
             this.ImportAllFromItems.Click += new System.EventHandler(this.ImportAllFromItemsLocker_Click);
             // 
             // fromXMLFileToolStripMenuItem
             // 
             this.fromXMLFileToolStripMenuItem.Name = "fromXMLFileToolStripMenuItem";
-            this.fromXMLFileToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+            this.fromXMLFileToolStripMenuItem.Size = new System.Drawing.Size(143, 22);
             this.fromXMLFileToolStripMenuItem.Text = "from XML File";
             this.fromXMLFileToolStripMenuItem.Click += new System.EventHandler(this.ImportAllFromXmlLocker_Click);
             // 
@@ -347,8 +361,8 @@ namespace WillowTree.Plugins
             // 
             this.LockerTree.AccessibleRole = System.Windows.Forms.AccessibleRole.Outline;
             this.LockerTree.AllowDrop = true;
-            this.LockerTree.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)));
+            this.LockerTree.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left)));
             this.LockerTree.DefaultToolTipProvider = null;
             this.LockerTree.DragDropMarkColor = System.Drawing.Color.Black;
             this.LockerTree.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -367,8 +381,12 @@ namespace WillowTree.Plugins
             // LockerPartsGroup
             // 
             this.LockerPartsGroup.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-                        | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.LockerPartsGroup.Controls.Add(this.LockerLockedLabel);
+            this.LockerPartsGroup.Controls.Add(this.LockerJunkLabel);
+            this.LockerPartsGroup.Controls.Add(this.LockedLocker);
+            this.LockerPartsGroup.Controls.Add(this.JunkLocker);
             this.LockerPartsGroup.Controls.Add(this.QualityLocker);
             this.LockerPartsGroup.Controls.Add(this.LevelIndexLocker);
             this.LockerPartsGroup.Controls.Add(this.MenuLockerSelected);
@@ -388,6 +406,40 @@ namespace WillowTree.Plugins
             this.LockerPartsGroup.TabIndex = 25;
             this.LockerPartsGroup.TabStop = false;
             this.LockerPartsGroup.Text = "Selected equipment";
+            // 
+            // LockerLockedLabel
+            // 
+            this.LockerLockedLabel.AutoSize = true;
+            this.LockerLockedLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.LockerLockedLabel.Location = new System.Drawing.Point(235, 361);
+            this.LockerLockedLabel.Name = "LockerLockedLabel";
+            this.LockerLockedLabel.Size = new System.Drawing.Size(43, 13);
+            this.LockerLockedLabel.TabIndex = 56;
+            this.LockerLockedLabel.Text = "Locked";
+            // 
+            // LockerJunkLabel
+            // 
+            this.LockerJunkLabel.AutoSize = true;
+            this.LockerJunkLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.LockerJunkLabel.Location = new System.Drawing.Point(109, 361);
+            this.LockerJunkLabel.Name = "LockerJunkLabel";
+            this.LockerJunkLabel.Size = new System.Drawing.Size(30, 13);
+            this.LockerJunkLabel.TabIndex = 55;
+            this.LockerJunkLabel.Text = "Junk";
+            // 
+            // LockedLocker
+            // 
+            this.LockedLocker.Location = new System.Drawing.Point(238, 377);
+            this.LockedLocker.Name = "LockedLocker";
+            this.LockedLocker.Size = new System.Drawing.Size(120, 20);
+            this.LockedLocker.TabIndex = 54;
+            // 
+            // JunkLocker
+            // 
+            this.JunkLocker.Location = new System.Drawing.Point(112, 377);
+            this.JunkLocker.Name = "JunkLocker";
+            this.JunkLocker.Size = new System.Drawing.Size(120, 20);
+            this.JunkLocker.TabIndex = 53;
             // 
             // QualityLocker
             // 
@@ -453,14 +505,14 @@ namespace WillowTree.Plugins
             // fromMultipleFilesToolStripMenuItem
             // 
             this.fromMultipleFilesToolStripMenuItem.Name = "fromMultipleFilesToolStripMenuItem";
-            this.fromMultipleFilesToolStripMenuItem.Size = new System.Drawing.Size(144, 22);
+            this.fromMultipleFilesToolStripMenuItem.Size = new System.Drawing.Size(141, 22);
             this.fromMultipleFilesToolStripMenuItem.Text = "from File(s)";
             this.fromMultipleFilesToolStripMenuItem.Click += new System.EventHandler(this.ImportFromFilesLocker_Click);
             // 
             // fromClipboardToolStripMenuItem
             // 
             this.fromClipboardToolStripMenuItem.Name = "fromClipboardToolStripMenuItem";
-            this.fromClipboardToolStripMenuItem.Size = new System.Drawing.Size(144, 22);
+            this.fromClipboardToolStripMenuItem.Size = new System.Drawing.Size(141, 22);
             this.fromClipboardToolStripMenuItem.Text = "from Clipboard";
             this.fromClipboardToolStripMenuItem.Click += new System.EventHandler(this.ImportFromClipboardLocker_Click);
             // 
@@ -476,21 +528,21 @@ namespace WillowTree.Plugins
             // toFileToolStripMenuItem
             // 
             this.toFileToolStripMenuItem.Name = "toFileToolStripMenuItem";
-            this.toFileToolStripMenuItem.Size = new System.Drawing.Size(138, 22);
+            this.toFileToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.toFileToolStripMenuItem.Text = "to File";
             this.toFileToolStripMenuItem.Click += new System.EventHandler(this.ExportToFileLocker_Click);
             // 
             // toClipboardToolStripMenuItem
             // 
             this.toClipboardToolStripMenuItem.Name = "toClipboardToolStripMenuItem";
-            this.toClipboardToolStripMenuItem.Size = new System.Drawing.Size(138, 22);
+            this.toClipboardToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.toClipboardToolStripMenuItem.Text = "to Clipboard";
             this.toClipboardToolStripMenuItem.Click += new System.EventHandler(this.ExportToClipboardLocker_Click);
             // 
             // groupPanel1
             // 
-            this.groupPanel1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupPanel1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.groupPanel1.Controls.Add(this.LevelIndexOverride);
             this.groupPanel1.Controls.Add(this.QualityOverride);
             this.groupPanel1.Controls.Add(this.labelOverrideRemAmmo);
@@ -606,9 +658,9 @@ namespace WillowTree.Plugins
             // 
             // PartsLocker
             // 
-            this.PartsLocker.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.PartsLocker.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.PartsLocker.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.PartsLocker.FormattingEnabled = true;
             this.PartsLocker.Items.AddRange(new object[] {
@@ -626,16 +678,16 @@ namespace WillowTree.Plugins
             "",
             "",
             ""});
-            this.PartsLocker.Location = new System.Drawing.Point(6, 364);
+            this.PartsLocker.Location = new System.Drawing.Point(6, 403);
             this.PartsLocker.Name = "PartsLocker";
-            this.PartsLocker.Size = new System.Drawing.Size(658, 212);
+            this.PartsLocker.Size = new System.Drawing.Size(658, 173);
             this.PartsLocker.TabIndex = 9;
             // 
             // PartsLockerLabel
             // 
             this.PartsLockerLabel.AutoSize = true;
             this.PartsLockerLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.PartsLockerLabel.Location = new System.Drawing.Point(6, 348);
+            this.PartsLockerLabel.Location = new System.Drawing.Point(9, 387);
             this.PartsLockerLabel.Name = "PartsLockerLabel";
             this.PartsLockerLabel.Size = new System.Drawing.Size(31, 13);
             this.PartsLockerLabel.TabIndex = 8;
@@ -654,8 +706,8 @@ namespace WillowTree.Plugins
             // 
             // DescriptionLocker
             // 
-            this.DescriptionLocker.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.DescriptionLocker.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.DescriptionLocker.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.DescriptionLocker.Location = new System.Drawing.Point(6, 184);
             this.DescriptionLocker.Multiline = true;
@@ -672,16 +724,6 @@ namespace WillowTree.Plugins
             this.RatingLocker.TabIndex = 2;
             this.RatingLocker.Text = "Rating";
             // 
-            // 
-            // 
-            // copyToBankToolStripMenuItem
-            // 
-            this.copyToBankToolStripMenuItem.Name = "copyToBankToolStripMenuItem";
-            this.copyToBankToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+N";
-            this.copyToBankToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
-            this.copyToBankToolStripMenuItem.Text = "Copy to Bank";
-            this.copyToBankToolStripMenuItem.Click += new System.EventHandler(this.CopyBank_Click);
-            // 
             // ucLocker
             // 
             this.Controls.Add(this.LockerTab);
@@ -694,6 +736,8 @@ namespace WillowTree.Plugins
             this.MenuLocker.PerformLayout();
             this.LockerPartsGroup.ResumeLayout(false);
             this.LockerPartsGroup.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.LockedLocker)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.JunkLocker)).EndInit();
             this.MenuLockerSelected.ResumeLayout(false);
             this.MenuLockerSelected.PerformLayout();
             this.groupPanel1.ResumeLayout(false);
@@ -758,6 +802,9 @@ namespace WillowTree.Plugins
         private System.Windows.Forms.ToolStripMenuItem clearAllToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripMenuItem copyToBankToolStripMenuItem;
-
-    }
+    private CustomControls.WTLabel LockerLockedLabel;
+    private CustomControls.WTLabel LockerJunkLabel;
+    private CustomControls.HexUpDown LockedLocker;
+    private CustomControls.HexUpDown JunkLocker;
+  }
 }

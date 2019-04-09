@@ -62,8 +62,9 @@ namespace WillowTree.Plugins
             this.importAllFromXMLToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparatorGear = new System.Windows.Forms.ToolStripSeparator();
             this.clearAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.copyToLockerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.copyToBackpackToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.copyToBankToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.copyToLockerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.duplicateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.moveToLockerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.purgeDuplicatesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -73,6 +74,10 @@ namespace WillowTree.Plugins
             this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.GearTree = new WillowTree.CustomControls.WTTreeView();
             this.GearPartsGroup = new WillowTree.CustomControls.WTGroupBox();
+            this.LabelGearLocked = new WillowTree.CustomControls.WTLabel();
+            this.LabelGearJunk = new WillowTree.CustomControls.WTLabel();
+            this.LockedGear = new WillowTree.CustomControls.HexUpDown();
+            this.JunkGear = new WillowTree.CustomControls.HexUpDown();
             this.txtGearInformation = new WillowTree.CustomControls.WTTextBox();
             this.LevelIndexGear = new WillowTree.CustomControls.WTSlideSelector();
             this.QualityGear = new WillowTree.CustomControls.WTSlideSelector();
@@ -90,11 +95,12 @@ namespace WillowTree.Plugins
             this.gbPartSelectorGear = new WillowTree.CustomControls.WTGroupBox();
             this.PartInfoGear = new WillowTree.CustomControls.WTTextBox();
             this.PartSelectorGear = new WillowTree.CustomControls.WTTreeView();
-            this.copyToBackpackToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.GearsTab.SuspendLayout();
             this.gbGear.SuspendLayout();
             this.MenuGears.SuspendLayout();
             this.GearPartsGroup.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.LockedGear)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.JunkGear)).BeginInit();
             this.MenuGearParts.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.QuantityGear)).BeginInit();
             this.gbPartSelectorGear.SuspendLayout();
@@ -117,8 +123,8 @@ namespace WillowTree.Plugins
             // 
             // gbGear
             // 
-            this.gbGear.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)));
+            this.gbGear.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left)));
             this.gbGear.Controls.Add(this.btnGearSearch);
             this.gbGear.Controls.Add(this.GearSearch);
             this.gbGear.Controls.Add(this.MenuGears);
@@ -189,14 +195,14 @@ namespace WillowTree.Plugins
             // fromMultipleFilesToolStripMenuItem
             // 
             this.fromMultipleFilesToolStripMenuItem.Name = "fromMultipleFilesToolStripMenuItem";
-            this.fromMultipleFilesToolStripMenuItem.Size = new System.Drawing.Size(144, 22);
+            this.fromMultipleFilesToolStripMenuItem.Size = new System.Drawing.Size(141, 22);
             this.fromMultipleFilesToolStripMenuItem.Text = "from File(s)";
             this.fromMultipleFilesToolStripMenuItem.Click += new System.EventHandler(this.ImportFromFilesGears_Click);
             // 
             // fromClipboardToolStripMenuItem
             // 
             this.fromClipboardToolStripMenuItem.Name = "fromClipboardToolStripMenuItem";
-            this.fromClipboardToolStripMenuItem.Size = new System.Drawing.Size(144, 22);
+            this.fromClipboardToolStripMenuItem.Size = new System.Drawing.Size(141, 22);
             this.fromClipboardToolStripMenuItem.Text = "from Clipboard";
             this.fromClipboardToolStripMenuItem.Click += new System.EventHandler(this.ImportFromClipboardGear_Click);
             // 
@@ -221,64 +227,72 @@ namespace WillowTree.Plugins
             // exportAllToXMLToolStripMenuItem
             // 
             this.exportAllToXMLToolStripMenuItem.Name = "exportAllToXMLToolStripMenuItem";
-            this.exportAllToXMLToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
+            this.exportAllToXMLToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
             this.exportAllToXMLToolStripMenuItem.Text = "Export All to XML";
             this.exportAllToXMLToolStripMenuItem.Click += new System.EventHandler(this.ExportToXmlGears_Click);
             // 
             // importAllFromXMLToolStripMenuItem
             // 
             this.importAllFromXMLToolStripMenuItem.Name = "importAllFromXMLToolStripMenuItem";
-            this.importAllFromXMLToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
+            this.importAllFromXMLToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
             this.importAllFromXMLToolStripMenuItem.Text = "Import All from XML";
             this.importAllFromXMLToolStripMenuItem.Click += new System.EventHandler(this.ImportAllFromXmlGears_Click);
             // 
             // toolStripSeparatorGear
             // 
             this.toolStripSeparatorGear.Name = "toolStripSeparatorGear";
-            this.toolStripSeparatorGear.Size = new System.Drawing.Size(197, 6);
+            this.toolStripSeparatorGear.Size = new System.Drawing.Size(194, 6);
             // 
             // clearAllToolStripMenuItem
             // 
             this.clearAllToolStripMenuItem.Name = "clearAllToolStripMenuItem";
-            this.clearAllToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
+            this.clearAllToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
             this.clearAllToolStripMenuItem.Text = "Clear All";
             this.clearAllToolStripMenuItem.Click += new System.EventHandler(this.ClearAllGear_Click);
             // 
-            // copyToLockerToolStripMenuItem
+            // copyToBackpackToolStripMenuItem
             // 
-            this.copyToLockerToolStripMenuItem.Name = "copyToLockerToolStripMenuItem";
-            this.copyToLockerToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+L";
-            this.copyToLockerToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
-            this.copyToLockerToolStripMenuItem.Text = "Copy to Locker";
-            this.copyToLockerToolStripMenuItem.Click += new System.EventHandler(this.CopyLocker_Click);
+            this.copyToBackpackToolStripMenuItem.Name = "copyToBackpackToolStripMenuItem";
+            this.copyToBackpackToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+B";
+            this.copyToBackpackToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
+            this.copyToBackpackToolStripMenuItem.Text = "Copy to Backpack";
+            this.copyToBackpackToolStripMenuItem.Click += new System.EventHandler(this.CopyBackpack_Click);
             // 
             // copyToBankToolStripMenuItem
             // 
             this.copyToBankToolStripMenuItem.Name = "copyToBankToolStripMenuItem";
             this.copyToBankToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+N";
-            this.copyToBankToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
+            this.copyToBankToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
             this.copyToBankToolStripMenuItem.Text = "Copy to Bank";
             this.copyToBankToolStripMenuItem.Click += new System.EventHandler(this.CopyBank_Click);
+            // 
+            // copyToLockerToolStripMenuItem
+            // 
+            this.copyToLockerToolStripMenuItem.Name = "copyToLockerToolStripMenuItem";
+            this.copyToLockerToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+L";
+            this.copyToLockerToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
+            this.copyToLockerToolStripMenuItem.Text = "Copy to Locker";
+            this.copyToLockerToolStripMenuItem.Click += new System.EventHandler(this.CopyLocker_Click);
             // 
             // duplicateToolStripMenuItem
             // 
             this.duplicateToolStripMenuItem.Name = "duplicateToolStripMenuItem";
             this.duplicateToolStripMenuItem.ShortcutKeyDisplayString = "Ins";
-            this.duplicateToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
+            this.duplicateToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
             this.duplicateToolStripMenuItem.Text = "Duplicate";
             this.duplicateToolStripMenuItem.Click += new System.EventHandler(this.DuplicateGear_Click);
             // 
             // moveToLockerToolStripMenuItem
             // 
             this.moveToLockerToolStripMenuItem.Name = "moveToLockerToolStripMenuItem";
-            this.moveToLockerToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
+            this.moveToLockerToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
             this.moveToLockerToolStripMenuItem.Text = "Move to Locker";
             this.moveToLockerToolStripMenuItem.Click += new System.EventHandler(this.MoveGear_Click);
             // 
             // purgeDuplicatesToolStripMenuItem
             // 
             this.purgeDuplicatesToolStripMenuItem.Name = "purgeDuplicatesToolStripMenuItem";
-            this.purgeDuplicatesToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
+            this.purgeDuplicatesToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
             this.purgeDuplicatesToolStripMenuItem.Text = "Purge Duplicates";
             this.purgeDuplicatesToolStripMenuItem.Click += new System.EventHandler(this.PurgeDuplicatesGear_Click);
             // 
@@ -294,14 +308,14 @@ namespace WillowTree.Plugins
             // editAllLevelToolStripMenuItem
             // 
             this.editAllLevelToolStripMenuItem.Name = "editAllLevelToolStripMenuItem";
-            this.editAllLevelToolStripMenuItem.Size = new System.Drawing.Size(109, 22);
+            this.editAllLevelToolStripMenuItem.Size = new System.Drawing.Size(106, 22);
             this.editAllLevelToolStripMenuItem.Text = "Level";
             this.editAllLevelToolStripMenuItem.Click += new System.EventHandler(this.EditLevelAllGears_Click);
             // 
             // editAllQualityToolStripMenuItem
             // 
             this.editAllQualityToolStripMenuItem.Name = "editAllQualityToolStripMenuItem";
-            this.editAllQualityToolStripMenuItem.Size = new System.Drawing.Size(109, 22);
+            this.editAllQualityToolStripMenuItem.Size = new System.Drawing.Size(106, 22);
             this.editAllQualityToolStripMenuItem.Text = "Quality";
             this.editAllQualityToolStripMenuItem.Click += new System.EventHandler(this.EditQualityAllGears_Click);
             // 
@@ -316,8 +330,8 @@ namespace WillowTree.Plugins
             // 
             this.GearTree.AccessibleRole = System.Windows.Forms.AccessibleRole.Outline;
             this.GearTree.AllowDrop = true;
-            this.GearTree.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)));
+            this.GearTree.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left)));
             this.GearTree.DefaultToolTipProvider = null;
             this.GearTree.DragDropMarkColor = System.Drawing.Color.Black;
             this.GearTree.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
@@ -335,8 +349,12 @@ namespace WillowTree.Plugins
             // 
             // GearPartsGroup
             // 
-            this.GearPartsGroup.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.GearPartsGroup.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.GearPartsGroup.Controls.Add(this.LabelGearLocked);
+            this.GearPartsGroup.Controls.Add(this.LabelGearJunk);
+            this.GearPartsGroup.Controls.Add(this.LockedGear);
+            this.GearPartsGroup.Controls.Add(this.JunkGear);
             this.GearPartsGroup.Controls.Add(this.txtGearInformation);
             this.GearPartsGroup.Controls.Add(this.LevelIndexGear);
             this.GearPartsGroup.Controls.Add(this.QualityGear);
@@ -350,16 +368,49 @@ namespace WillowTree.Plugins
             this.GearPartsGroup.Location = new System.Drawing.Point(282, 3);
             this.GearPartsGroup.Name = "GearPartsGroup";
             this.GearPartsGroup.Padding = new System.Windows.Forms.Padding(3);
-            this.GearPartsGroup.Size = new System.Drawing.Size(671, 293);
+            this.GearPartsGroup.Size = new System.Drawing.Size(671, 342);
             this.GearPartsGroup.TabIndex = 36;
             this.GearPartsGroup.TabStop = false;
             this.GearPartsGroup.Text = "Gear Parts";
             // 
+            // LabelGearLocked
+            // 
+            this.LabelGearLocked.AutoSize = true;
+            this.LabelGearLocked.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.LabelGearLocked.Location = new System.Drawing.Point(129, 291);
+            this.LabelGearLocked.Name = "LabelGearLocked";
+            this.LabelGearLocked.Size = new System.Drawing.Size(43, 13);
+            this.LabelGearLocked.TabIndex = 60;
+            this.LabelGearLocked.Text = "Locked";
+            // 
+            // LabelGearJunk
+            // 
+            this.LabelGearJunk.AutoSize = true;
+            this.LabelGearJunk.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.LabelGearJunk.Location = new System.Drawing.Point(6, 291);
+            this.LabelGearJunk.Name = "LabelGearJunk";
+            this.LabelGearJunk.Size = new System.Drawing.Size(30, 13);
+            this.LabelGearJunk.TabIndex = 59;
+            this.LabelGearJunk.Text = "Junk";
+            // 
+            // LockedGear
+            // 
+            this.LockedGear.Location = new System.Drawing.Point(132, 307);
+            this.LockedGear.Name = "LockedGear";
+            this.LockedGear.Size = new System.Drawing.Size(120, 20);
+            this.LockedGear.TabIndex = 58;
+            // 
+            // JunkGear
+            // 
+            this.JunkGear.Location = new System.Drawing.Point(6, 307);
+            this.JunkGear.Name = "JunkGear";
+            this.JunkGear.Size = new System.Drawing.Size(120, 20);
+            this.JunkGear.TabIndex = 57;
+            // 
             // txtGearInformation
             // 
-            this.txtGearInformation.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtGearInformation.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.txtGearInformation.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtGearInformation.Location = new System.Drawing.Point(403, 47);
             this.txtGearInformation.Multiline = true;
@@ -440,21 +491,19 @@ namespace WillowTree.Plugins
             // toFileToolStripMenuItem
             // 
             this.toFileToolStripMenuItem.Name = "toFileToolStripMenuItem";
-            this.toFileToolStripMenuItem.Size = new System.Drawing.Size(133, 22);
+            this.toFileToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.toFileToolStripMenuItem.Text = "to File";
             this.toFileToolStripMenuItem.Click += new System.EventHandler(this.ExportToFileGear_Click);
             // 
             // toClipboardToolStripMenuItem
             // 
             this.toClipboardToolStripMenuItem.Name = "toClipboardToolStripMenuItem";
-            this.toClipboardToolStripMenuItem.Size = new System.Drawing.Size(133, 22);
+            this.toClipboardToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.toClipboardToolStripMenuItem.Text = "to Clipboard";
             this.toClipboardToolStripMenuItem.Click += new System.EventHandler(this.ExportToClipboardGear_Click);
             // 
             // PartsGear
             // 
-            this.PartsGear.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)));
             this.PartsGear.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.PartsGear.FormattingEnabled = true;
             this.PartsGear.Location = new System.Drawing.Point(6, 47);
@@ -511,31 +560,31 @@ namespace WillowTree.Plugins
             // 
             // gbPartSelectorGear
             // 
-            this.gbPartSelectorGear.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.gbPartSelectorGear.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.gbPartSelectorGear.Controls.Add(this.PartInfoGear);
             this.gbPartSelectorGear.Controls.Add(this.PartSelectorGear);
             this.gbPartSelectorGear.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.gbPartSelectorGear.Location = new System.Drawing.Point(282, 302);
+            this.gbPartSelectorGear.Location = new System.Drawing.Point(282, 351);
             this.gbPartSelectorGear.Name = "gbPartSelectorGear";
-            this.gbPartSelectorGear.Size = new System.Drawing.Size(671, 286);
+            this.gbPartSelectorGear.Size = new System.Drawing.Size(671, 237);
             this.gbPartSelectorGear.TabIndex = 35;
             this.gbPartSelectorGear.TabStop = false;
             this.gbPartSelectorGear.Text = "Parts Selector";
             // 
             // PartInfoGear
             // 
-            this.PartInfoGear.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.PartInfoGear.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.PartInfoGear.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.PartInfoGear.Location = new System.Drawing.Point(422, 23);
             this.PartInfoGear.Multiline = true;
             this.PartInfoGear.Name = "PartInfoGear";
             this.PartInfoGear.ReadOnly = true;
             this.PartInfoGear.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.PartInfoGear.Size = new System.Drawing.Size(243, 257);
+            this.PartInfoGear.Size = new System.Drawing.Size(243, 208);
             this.PartInfoGear.TabIndex = 30;
             this.PartInfoGear.WordWrap = false;
             // 
@@ -543,8 +592,8 @@ namespace WillowTree.Plugins
             // 
             this.PartSelectorGear.AccessibleRole = System.Windows.Forms.AccessibleRole.Outline;
             this.PartSelectorGear.AllowDrop = true;
-            this.PartSelectorGear.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)));
+            this.PartSelectorGear.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left)));
             this.PartSelectorGear.DefaultToolTipProvider = null;
             this.PartSelectorGear.DragDropMarkColor = System.Drawing.Color.Black;
             this.PartSelectorGear.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -552,19 +601,11 @@ namespace WillowTree.Plugins
             this.PartSelectorGear.Location = new System.Drawing.Point(6, 23);
             this.PartSelectorGear.Name = "PartSelectorGear";
             this.PartSelectorGear.SelectedNode = null;
-            this.PartSelectorGear.Size = new System.Drawing.Size(411, 257);
+            this.PartSelectorGear.Size = new System.Drawing.Size(411, 208);
             this.PartSelectorGear.TabIndex = 29;
             this.PartSelectorGear.Text = "from Clipboard";
             this.PartSelectorGear.SelectionChanged += new System.EventHandler(this.PartSelectorGear_SelectionChanged);
             this.PartSelectorGear.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.PartSelectorGear_NodeDoubleClick);
-            // 
-            // copyToBackpackToolStripMenuItem
-            // 
-            this.copyToBackpackToolStripMenuItem.Name = "copyToBackpackToolStripMenuItem";
-            this.copyToBackpackToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+B";
-            this.copyToBackpackToolStripMenuItem.Size = new System.Drawing.Size(200, 22);
-            this.copyToBackpackToolStripMenuItem.Text = "Copy to Backpack";
-            this.copyToBackpackToolStripMenuItem.Click += new System.EventHandler(this.CopyBackpack_Click);
             // 
             // ucGears
             // 
@@ -578,6 +619,8 @@ namespace WillowTree.Plugins
             this.MenuGears.PerformLayout();
             this.GearPartsGroup.ResumeLayout(false);
             this.GearPartsGroup.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.LockedGear)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.JunkGear)).EndInit();
             this.MenuGearParts.ResumeLayout(false);
             this.MenuGearParts.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.QuantityGear)).EndInit();
@@ -632,5 +675,9 @@ namespace WillowTree.Plugins
         private CustomControls.WTTextBox txtGearInformation;
         private System.Windows.Forms.ToolStripMenuItem copyToBankToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem copyToBackpackToolStripMenuItem;
+        private CustomControls.WTLabel LabelGearLocked;
+        private CustomControls.WTLabel LabelGearJunk;
+        private CustomControls.HexUpDown LockedGear;
+        private CustomControls.HexUpDown JunkGear;
     }
 }

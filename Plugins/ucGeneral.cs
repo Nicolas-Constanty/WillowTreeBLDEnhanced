@@ -112,12 +112,12 @@ namespace WillowTree.Plugins
 
             // If DLC section 1 is not present then the bank does not exist, so disable the
             // control to prevent the user from editing its size.
-            labelGeneralBankSpace.Enabled = CurrentWSG.DLC.HasSection1;
-            BankSpace.Enabled = CurrentWSG.DLC.HasSection1;
-            if (CurrentWSG.DLC.HasSection1)
+            labelGeneralBankSpace.Enabled = CurrentWSG.Dlc.HasSection1;
+            BankSpace.Enabled = CurrentWSG.Dlc.HasSection1;
+            if (CurrentWSG.Dlc.HasSection1)
             {
-                Util.SetNumericUpDown(BankSpace, CurrentWSG.DLC.BankSize);
-                if (BankSpace.Value != CurrentWSG.DLC.BankSize)
+                Util.SetNumericUpDown(BankSpace, CurrentWSG.Dlc.BankSize);
+                if (BankSpace.Value != CurrentWSG.Dlc.BankSize)
                     MessageBox.Show("The character's bank capacity was outside the acceptable range.  It has been adjusted.\n\nOld: " + CurrentWSG.BackpackSize + "\nNew: " + (int)BackpackSpace.Value);
             }
             else
@@ -132,7 +132,7 @@ namespace WillowTree.Plugins
         public void OnGameSaving(object sender, PluginEventArgs e)
         {
             if (BankSpace.Enabled)
-                CurrentWSG.DLC.BankSize = (int)BankSpace.Value;
+                CurrentWSG.Dlc.BankSize = (int)BankSpace.Value;
 
             // TODO: Most of these values that are being set in GameSaving should
             // be set right away with events when the values change in order to
@@ -260,7 +260,7 @@ namespace WillowTree.Plugins
 
             try
             {
-                OtherSave.LoadWSG(filename);
+                OtherSave.LoadWsg(filename);
             }
             catch { throw new ApplicationException("LoadFailed"); }
 
@@ -277,7 +277,7 @@ namespace WillowTree.Plugins
         public void MergeFromSaveLocations(string filename)
         {
             WillowSaveGame OtherSave = new WillowSaveGame();
-            OtherSave.LoadWSG(filename);
+            OtherSave.LoadWsg(filename);
 
             if (OtherSave.LocationStrings.Count() == 0)
                 return;
@@ -539,7 +539,7 @@ namespace WillowTree.Plugins
 
                 try
                 {
-                    OtherSave.LoadWSG(tempOpen.FileName());
+                    OtherSave.LoadWsg(tempOpen.FileName());
                 }
                 catch { MessageBox.Show("Couldn't open the other save file."); return; }
 

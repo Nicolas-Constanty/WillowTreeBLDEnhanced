@@ -127,56 +127,45 @@ namespace WillowTree
             }
         }
 
+        private void ConvertListForEditing(InventoryList itmList, ref List<List<string>> itmStrings, ref List<List<int>> itmValues)
+        {
+            // Populate itmList with items created from the WillowSaveGame data lists
+            itmList.ClearSilent();
+            for (int i = 0; i < itmStrings.Count; i++)
+                itmList.AddSilent(new InventoryEntry(itmList.invType, itmStrings[i], itmValues[i]));
+            itmList.OnListReload();
+
+            // Release the WillowSaveGame data lists now that the data is converted
+            // to the format that the WillowTree UI uses.
+            itmStrings = null;
+            itmValues = null;
+        }
+
         private void ConvertListForEditing<T>(InventoryList itmList, ref List<T> objs) where T : WillowSaveGame.Object
         {
             // Populate itmList with items created from the WillowSaveGame data lists
             itmList.ClearSilent();
             foreach (var obj in objs)
-                itmList.AddSilent(new InventoryEntry(itmList.invType, obj.Strings, obj.Values));
+                itmList.AddSilent(new InventoryEntry(itmList.invType, obj.Strings, obj.GetValues()));
             itmList.OnListReload();
 
-            // Release the WillowSaveGame data lists now that the data is converted
-            // to the format that the WillowTree UI uses.
-            foreach (var obj in objs)
-            {
-                obj.Strings = null;
-                obj.Values = null;
-            }
+            objs = null;
         }
 
-        //private void ConvertListForEditing(InventoryList itmList, ref List<List<string>> itmStrings, ref List<List<int>> itmValues)
-        //{
-        //    // Populate itmList with items created from the WillowSaveGame data lists
-        //    itmList.ClearSilent();
-        //    for (int i = 0; i < itmStrings.Count; i++)
-        //        itmList.AddSilent(new InventoryEntry(itmList.invType, itmStrings[i], itmValues[i]));
-        //    itmList.OnListReload();
-
-        //    // Release the WillowSaveGame data lists now that the data is converted
-        //    // to the format that the WillowTree UI uses.
-        //    itmStrings = null;
-        //    itmValues = null;
-        //}
         private void ConvertListForEditing(InventoryList itmList, ref List<WillowSaveGame.BankEntry> itmBank)
         {
             // Populate itmList with items created from the WillowSaveGame data lists
             itmList.ClearSilent();
             for (int i = 0; i < itmBank.Count; i++)
             {
-                List<int> itmBankValues = new List<int>() { itmBank[i].Quantity, itmBank[i].Quality, itmBank[i].EquipedSlot, itmBank[i].Level };
+                List<int> itmBankValues = new List<int>() { itmBank[i].Quantity, itmBank[i].Quality, itmBank[i].EquipedSlot, itmBank[i].Level, itmBank[i].Junk, itmBank[i].Locked };
 
                 // Store a reference to the parts list
-                List<string> parts = new List<string>();
-                int itmType = itmBank[i].TypeId - 1;
+                List<string> parts = itmBank[i].Strings;
 
-                foreach (var part in itmBank[i].Strings)
-                {
-                    parts.Add(part);
-                }
-
-                //// Detach the parts list from the bank entry.
-                //itmBank[i].Parts = null;
-
+                // Detach the parts list from the bank entry.
+                itmBank[i].Strings = null;
+ 
                 // Items have a different part order in the bank and in the backpack
                 // Part                Index      Index
                 //                   Inventory    Bank
@@ -190,11 +179,11 @@ namespace WillowTree
                 // Prefix                7          7
                 // Title                 8          8
 
-
+                int itmType = itmBank[i].TypeId - 1;
 
                 // Convert all items into the backpack part order.  Weapons use
                 // the same format for both backpack and bank.
-
+      
                 if (itmType == InventoryType.Item)
                 {
                     string temp = parts[1];
@@ -245,29 +234,23 @@ namespace WillowTree
         }
         private void RepopulateListForSaving<T>(InventoryList itmList, ref List<T> objs) where T : WillowSaveGame.Object, new()
         {
-            // Build the lists of string and value data needed by WillowSaveGame to store the 
-            // inventory from the data that is in itmList.
+            objs = new List<T>();
             foreach (InventoryEntry item in itmList.Items.Values)
             {
                 var obj = new T();
-                foreach (var part in item.Parts)
-                {
-                    obj.Strings.Add(part);
-                }
-                foreach (var value in item.GetValues())
-                {
-                    obj.Values.Add(value);
-                }
+                obj.Strings = item.Parts;
+                obj.SetValues(item.GetValues());
+                objs.Add(obj);
             }
 
-            // itm may represent: item, weapon, bank
-            // Note that the string lists that contain the parts are shared
-            // between itmList and itmStrings after this method runs, so 
-            // cross-contamination can occur if they are modified.  They should 
-            // only be held in this state long enough to save, which does not modify
-            // values, then itmStrings/itmValues should be released by setting them
-            // to null since they will not be used again until the next save when they
-            // will have to be recreated.
+                // itm may represent: item, weapon, bank
+                // Note that the string lists that contain the parts are shared
+                // between itmList and itmStrings after this method runs, so 
+                // cross-contamination can occur if they are modified.  They should 
+                // only be held in this state long enough to save, which does not modify
+                // values, then itmStrings/itmValues should be released by setting them
+                // to null since they will not be used again until the next save when they
+                // will have to be recreated.
         }
         private void RepopulateListForSaving(InventoryList itmList, ref List<WillowSaveGame.BankEntry> itmBank)
         {
@@ -283,33 +266,13 @@ namespace WillowTree
                 if (item.Type == InventoryType.Item)
                 {
                     // Items must have their parts reordered because they are different in the bank.
-                    List<string> oldPartsItem = new List<string>();
-                    foreach (var part in item.Parts)
-                    {
-                        oldPartsItem.Add(part);
-                    }
-
-                    itm.Strings.Add(oldPartsItem[1]);
-                    itm.Strings.Add(oldPartsItem[0]);
-                    itm.Strings.Add(oldPartsItem[6]);
-                    itm.Strings.Add(oldPartsItem[2]);
-                    itm.Strings.Add(oldPartsItem[3]);
-                    itm.Strings.Add(oldPartsItem[4]);
-                    itm.Strings.Add(oldPartsItem[5]);
-                    itm.Strings.Add(oldPartsItem[7]);
-                    itm.Strings.Add(oldPartsItem[8]);
+                    List<string> oldParts = item.Parts;
+                    itm.Strings = new List<string>() { oldParts[1], oldParts[0], oldParts[6], oldParts[2], oldParts[3],
+                                                                  oldParts[4], oldParts[5], oldParts[7], oldParts[8] };     
                 }
                 else
-                {
-                    itm.Strings = new List<string>();
+                    itm.Strings = new List<string>(item.Parts);
 
-                    foreach (var part in item.Parts)
-                    {
-                        itm.Strings.Add(part);
-                    }
-                }
-
-                //itm.Parts.RemoveAll((i) => { return i.Name == "None"; });
                 //Item/Weapon in bank have their type increase by 1, we  increase TypeId by 1 to restore them to their natural value
                 itm.TypeId = (byte)(item.Type + 1);
 
@@ -319,7 +282,10 @@ namespace WillowTree
                 itm.Quantity = values[0];//Quantity;
                 itm.Quality = (short)values[1];//QualityIndex;
                 itm.EquipedSlot = (byte)values[2];//Equipped;
-                itm.Level = (short)values[3];//LevelIndex
+                itm.Level = (short)values[3];//LevelIndex;
+                itm.Junk = (byte)values[4];
+                itm.Locked = (byte)values[5];
+
                 itmBank.Add(itm);
             }
 
@@ -555,8 +521,6 @@ namespace WillowTree
 
             // Convert the weapons and items data from WeaponList/ItemList into
             // the format used by WillowSaveGame.
-            CurrentWSG.Weapons = new List<WillowSaveGame.Weapon>();
-            CurrentWSG.Items = new List<WillowSaveGame.Item>();
             RepopulateListForSaving(db.WeaponList, ref CurrentWSG.Weapons);
             RepopulateListForSaving(db.ItemList, ref CurrentWSG.Items);
             RepopulateListForSaving(db.BankList, ref CurrentWSG.Dlc.BankInventory);

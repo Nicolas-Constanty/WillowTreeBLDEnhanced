@@ -425,7 +425,7 @@ namespace WillowTree
         public class Object
         {
             public List<string> Strings = new List<string>();
-            public List<int> Values = new List<int>();
+            protected int[] _values = new int[6];
 
             public ReadStringsFunction ReadStrings;
             public ReadValuesFunction ReadValues = ReadObjectValues;
@@ -438,32 +438,42 @@ namespace WillowTree
                 }
             }
 
+            public void SetValues(List<int> values)
+            {
+                _values = values.ToArray();
+            }
+
+            public List<int> GetValues()
+            {
+                return _values.ToList();
+            }
+
             public int Quality
             {
-                get { return Values[1]; }
-                set { Values[1] = value; }
+                get { return _values[1]; }
+                set { _values[1] = value; }
             }
             public int EquipedSlot
             {
-                get { return Values[2]; }
-                set { Values[2] = value; }
+                get { return _values[2]; }
+                set { _values[2] = value; }
             }
             public int Level
             {
-                get { return Values[3]; }
-                set { Values[3] = value; }
+                get { return _values[3]; }
+                set { _values[3] = value; }
             }
 
             public int Junk
             {
-                get { return Values[4]; }
-                set { Values[4] = value; }
+                get { return _values[4]; }
+                set { _values[4] = value; }
             }
 
             public int Locked
             {
-                get { return Values[5]; }
-                set { Values[5] = value; }
+                get { return _values[5]; }
+                set { _values[5] = value; }
             }
         }
         public class Item : Object
@@ -476,8 +486,8 @@ namespace WillowTree
 
             public int Quantity
             {
-                get { return Values[0]; }
-                set { Values[0] = value; }
+                get { return _values[0]; }
+                set { _values[0] = value; }
             }
         }
         public class Weapon : Object
@@ -490,8 +500,8 @@ namespace WillowTree
 
             public int Ammo
             {
-                get { return Values[0]; }
-                set { Values[0] = value; }
+                get { return _values[0]; }
+                set { _values[0] = value; }
             }
         }
 
@@ -898,7 +908,7 @@ namespace WillowTree
         {
             var item = new T();
             item.Strings = item.ReadStrings(reader, EndianWsg);
-            item.Values = item.ReadValues(reader, EndianWsg, RevisionNumber);
+            item.SetValues(item.ReadValues(reader, EndianWsg, RevisionNumber));
             return item;
         }
 
@@ -1389,7 +1399,7 @@ namespace WillowTree
         private void WriteObject<T>(BinaryWriter Out, T obj) where T : Object
         {
             WriteStrings(Out, obj.Strings);
-            WriteValues(Out, obj.Values);
+            WriteValues(Out, obj.GetValues());
         }
 
         private void WriteObjects<T>(BinaryWriter Out, List<T> objs) where T : Object
@@ -1633,7 +1643,7 @@ namespace WillowTree
             foreach (var item in Items)
             {
 
-                if ((item.Values[3] == 0) && (item.Strings[0].Substring(0, 3) != "dlc"))
+                if ((item.Level == 0) && (item.Strings[0].Substring(0, 3) != "dlc"))
                     Items1.Add(item);
                 else
                     Items2.Add(item);
@@ -1641,7 +1651,7 @@ namespace WillowTree
             foreach (var weapon in Weapons)
             {
 
-                if ((weapon.Values[3] == 0) && (weapon.Strings[0].Substring(0, 3) != "dlc"))
+                if ((weapon.Level == 0) && (weapon.Strings[0].Substring(0, 3) != "dlc"))
                     Weapons1.Add(weapon);
                 else
                     Weapons2.Add(weapon);
@@ -1656,8 +1666,8 @@ namespace WillowTree
 
             public int Quantity
             {
-                get { return Values[0]; }
-                set { Values[0] = value; }
+                get { return _values[0]; }
+                set { _values[0] = value; }
             }
 
             public byte[] Serialize(ByteOrder endian)
@@ -1666,34 +1676,47 @@ namespace WillowTree
                 if (TypeId != 1 && TypeId != 2)
                     throw new FormatException("Bank entry to be written has an invalid Type ID.  TypeId = " + TypeId);
                 bytes.Add(TypeId);
+                int count = 0;
                 foreach (var component in Strings)
                 {
+                    if (component == "None")
+                    {
+                        bytes.AddRange(new byte[25]);
+                        continue;
+                    }
                     bytes.Add(32);
+                    Console.WriteLine("Component " + component);
                     var subComponentArray = component.Split('.');
-                    bytes.AddRange(new byte[6 - subComponentArray.Length]);
+                    bytes.AddRange(new byte[(6 - subComponentArray.Length) * 4]);
                     foreach (var subComponent in subComponentArray)
                     {
-                        bytes.AddRange(subComponent == "None" ? new byte[5] : GetBytesFromString(subComponent, endian));
+                        bytes.AddRange(GetBytesFromString(subComponent, endian));
                     }
-                    bytes.AddRange(new byte[8]);
-                    bytes.Add((byte)EquipedSlot);
-                    bytes.Add(1);
+
+                    if (count == 2)
+                    {
+                        bytes.AddRange(GetBytesFromInt((UInt16)Quality + (UInt16)Level * (UInt32)65536, endian));
+                    }
+                    count++;
+                }
+                bytes.AddRange(new byte[8]);
+                bytes.Add((byte)EquipedSlot);
+                bytes.Add(1);
+                if (ExportValuesCount > 4)
+                {
+                    bytes.Add((byte)Junk);
+                    bytes.Add((byte)Locked);
+                }
+                if (TypeId == 1)
+                {
+                    bytes.AddRange(GetBytesFromInt(Quantity, endian));
+                }
+                else
+                {
                     if (ExportValuesCount > 4)
-                    {
-                        bytes.Add((byte)Values[0]);
-                        bytes.Add((byte)Junk);
-                    }
-                    if (TypeId == 1)
-                    {
-                        bytes.AddRange(GetBytesFromInt(Values[0], endian));
-                    }
+                        bytes.Add((byte)Locked);
                     else
-                    {
-                        if (ExportValuesCount > 4)
-                            bytes.Add((byte)Locked);
-                        else
-                            bytes.Add((byte)Quantity);
-                    }
+                        bytes.Add((byte)Quantity);
                 }
                 return bytes.ToArray();
             }
@@ -1787,7 +1810,6 @@ namespace WillowTree
                 
                 Strings = new List<string>();
                 Strings.AddRange(new string[TypeId == 1 ? 14 : 9]);
-                Values.AddRange(new int[ExportValuesCount]);
                 for (var i = 0; i < Strings.Count; i++)
                 {
                     DeserializePart(reader, endian, out var part, i);

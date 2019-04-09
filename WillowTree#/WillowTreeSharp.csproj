@@ -327,7 +327,7 @@
     <PostBuildEvent>xcopy /Y /D /I /E  "$(ProjectDir)Data"  "$(ProjectDir)$(OutDir)Data"
 xcopy /Y /D /I /E  "$(ProjectDir)DLLDependencies" "$(ProjectDir)$(OutDir)"
 xcopy /Y /D "$(ProjectDir)COPYING.TXT" "$(ProjectDir)$(OutDir)"
-xcopy /Y /D "$(ProjectDir)README.md" "$(ProjectDir)$(OutDir)"</PostBuildEvent>
+xcopy /Y /D "$(ProjectDir)\..\README.md" "$(ProjectDir)$(OutDir)"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>

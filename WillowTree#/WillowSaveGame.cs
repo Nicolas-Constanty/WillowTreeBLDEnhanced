@@ -656,7 +656,7 @@ namespace WillowTree
         public long ProfileId;
         public byte[] DeviceId;
         public byte[] ConImage;
-        public string TitleDisplay;
+        public string wdfxgDisplay;
         public string TitlePackage;
         public uint TitleId = 1414793191;
 #endregion
@@ -1378,7 +1378,6 @@ namespace WillowTree
             Write(Out, (Int32)tempLevelQuality, EndianWsg);
             Write(Out, values[2], EndianWsg);
             if (RevisionNumber <= 26) return;
-            Console.WriteLine(RevisionNumber);
             Write(Out, values[4], EndianWsg);
             Write(Out, values[5], EndianWsg);
         }

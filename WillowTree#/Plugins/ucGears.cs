@@ -319,7 +319,12 @@ namespace WillowTree.Plugins
             try
             {
                 if (ImportFromTextGear(Clipboard.GetText()))
+                {
                     GearTree.SelectedNode = GearTree.AllNodes.Last();
+                    InventoryEntry gear = GearTree.SelectedNode.GetEntry();
+                    RefreshGearTree(gear);
+                }
+                    
             }
             catch
             {
@@ -402,6 +407,11 @@ namespace WillowTree.Plugins
 
             InventoryEntry gear = GearTree.SelectedNode.GetEntry();
 
+            RefreshGearTree(gear);
+        }
+
+        void RefreshGearTree(InventoryEntry gear)
+        {
             for (int Progress = 0; Progress < PartsGear.Items.Count; Progress++)
                 gear.Parts[Progress] = (string)PartsGear.Items[Progress];
 

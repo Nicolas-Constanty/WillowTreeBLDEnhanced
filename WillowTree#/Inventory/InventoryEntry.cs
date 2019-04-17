@@ -533,19 +533,56 @@ namespace WillowTree.Inventory
                         break;
                     parts.Add(InOutParts[Progress]);
                 }
-                                
-                if (!(inType == InventoryType.Item || inType == InventoryType.Weapon))
-                {   // Figure out if it an item or a weapon by the number of string values counted
-                    if (Progress == 9) // item
-                        inType = InventoryType.Item;
-                    else if (Progress == 14) // weapon
-                        inType = InventoryType.Weapon;
-                    else
-                        throw new FormatException();
+
+                if (Progress != 9 && Progress != 14)
+                    throw new FormatException();
+
+                byte t = Progress == 9 ? InventoryType.Item : InventoryType.Weapon;
+
+                if (t != inType)
+                {
+                    MessageBox.Show(inType == InventoryType.Item
+                        ? @"You are try to import weapon into item's backpack!"
+                        : @"You are try to import item into weapon's backpack!");
+                    return null;
                 }
 
-                for (int i = 0; i < WillowSaveGame.ExportValuesCount; i++)
-                    values.Add(Parse.AsInt(InOutParts[Progress + i]));
+                if (InOutParts.Count == WillowSaveGame.ExportValuesCount)
+                {
+                    for (int i = 0; i < WillowSaveGame.ExportValuesCount; i++)
+                        values.Add(Parse.AsInt(InOutParts[Progress + i]));
+                    if (values.Count > 4)
+                    {
+                        values[4] = (values[4] != 0 && values[4] != 1) ? 0 : values[4];
+                        values[5] = (values[5] != 0 && values[5] != 1) ? 0 : values[5];
+                    }
+                }
+                else if (InOutParts.Count < Progress + 4)
+                {
+                    throw new FormatException();
+                }
+                else 
+                {
+                    string message = "Item in legacy format in old format, do you want to convert it to the new format?";
+                    string caption = "Ignoring imported item";
+                    MessageBoxButtons buttons = MessageBoxButtons.YesNo;
+                    DialogResult result;
+
+                    // Displays the MessageBox.
+                    result = MessageBox.Show(message, caption, buttons);
+                    if (result == System.Windows.Forms.DialogResult.Yes)
+                    {
+                        for (int i = 0; i < 4; i++)
+                            values.Add(Parse.AsInt(InOutParts[Progress + i]));
+                        values.Add(0);
+                        values.Add(0);
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+                
                 values[2] = 0;  // set equipped slot to 0
             }
             catch (FormatException)

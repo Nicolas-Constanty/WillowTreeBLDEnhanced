@@ -656,7 +656,7 @@ namespace WillowTree
         public long ProfileId;
         public byte[] DeviceId;
         public byte[] ConImage;
-        public string wdfxgDisplay;
+        public string TitleDisplay;
         public string TitlePackage;
         public uint TitleId = 1414793191;
 #endregion

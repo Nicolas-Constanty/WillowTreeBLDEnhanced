@@ -547,7 +547,7 @@ namespace WillowTree.Inventory
                     return null;
                 }
 
-                if (InOutParts.Count == WillowSaveGame.ExportValuesCount)
+                if (InOutParts.Count == Progress + WillowSaveGame.ExportValuesCount)
                 {
                     for (int i = 0; i < WillowSaveGame.ExportValuesCount; i++)
                         values.Add(Parse.AsInt(InOutParts[Progress + i]));
@@ -563,7 +563,7 @@ namespace WillowTree.Inventory
                 }
                 else 
                 {
-                    string message = "Item in legacy format in old format, do you want to convert it to the new format?";
+                    string message = "Item is in old format, do you want to convert it to the new format?";
                     string caption = "Ignoring imported item";
                     MessageBoxButtons buttons = MessageBoxButtons.YesNo;
                     DialogResult result;

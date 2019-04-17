@@ -372,6 +372,8 @@ namespace WillowTree
         }
 
 #region Members
+
+        private static readonly int EnhancedVersion = 0x27;
         public ByteOrder EndianWsg;
 
         public string Platform;
@@ -882,7 +884,7 @@ namespace WillowTree
                 level
             };
 
-            if (revisionNumber <= 26) return values;
+            if (revisionNumber < EnhancedVersion) return values;
             Int32 junk = ReadInt32(reader, bo);
             Int32 locked = ReadInt32(reader, bo);
             Console.WriteLine(locked);
@@ -989,7 +991,7 @@ namespace WillowTree
                 throw new FileFormatException("Player header does not match expected value.");
 
             RevisionNumber = ReadInt32(testReader, EndianWsg);
-            ExportValuesCount = RevisionNumber > 26 ? 6 : 4;
+            ExportValuesCount = RevisionNumber < EnhancedVersion ? 4 : 6;
             Class = ReadString(testReader, EndianWsg);
             Level = ReadInt32(testReader, EndianWsg);
             Experience = ReadInt32(testReader, EndianWsg);
@@ -1053,7 +1055,7 @@ namespace WillowTree
             Color3 = ReadInt32(testReader, EndianWsg); //ABGR Big (X360, PS3), RGBA Little (PC)
             Head = ReadInt32(testReader, EndianWsg);
 
-            if (RevisionNumber > 38)
+            if (RevisionNumber >= EnhancedVersion)
             {
                 Unknown2 = ReadBytes(testReader, 93, EndianWsg);
             }
@@ -1192,7 +1194,7 @@ namespace WillowTree
                     Dlc.DataSections.Add(section);
                 }
 
-                if (RevisionNumber <= 38) return;
+                if (RevisionNumber < EnhancedVersion) return;
                 //Padding at the end of file, don't know exactly why
                 var temp = new List<byte>();
                 while (!Eof(testReader))
@@ -1377,7 +1379,7 @@ namespace WillowTree
             UInt32 tempLevelQuality = (UInt16)values[1] + (UInt16)values[3] * (UInt32)65536;
             Write(Out, (Int32)tempLevelQuality, EndianWsg);
             Write(Out, values[2], EndianWsg);
-            if (RevisionNumber <= 26) return;
+            if (RevisionNumber < EnhancedVersion) return;
             Write(Out, values[4], EndianWsg);
             Write(Out, values[5], EndianWsg);
         }
@@ -1524,7 +1526,7 @@ namespace WillowTree
             Write(Out, Color3, EndianWsg); //ABGR Big (X360, PS3), RGBA Little (PC)
             Write(Out, Head, EndianWsg);
 
-            if (RevisionNumber > 38)
+            if (RevisionNumber >= EnhancedVersion)
             {
                 Write(Out, Unknown2);
             }
@@ -1607,7 +1609,7 @@ namespace WillowTree
                 Out.Write(section.RawData);
                 section.BaseData = null; // BaseData isn't needed anymore.  Free it.
             }
-            if (RevisionNumber > 38)
+            if (RevisionNumber >= EnhancedVersion)
             {
                 //Past end padding
                 Write(Out, Unknown3);

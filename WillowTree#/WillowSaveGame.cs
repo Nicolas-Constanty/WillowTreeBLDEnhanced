@@ -1527,18 +1527,14 @@ namespace WillowTree
             {
                 Write(Out, Unknown2);
             }
-            else
-            {
-                int numberOfPromoCodesUsed = PromoCodesUsed.Count;
-                Write(Out, numberOfPromoCodesUsed, EndianWsg);
-                for (int i = 0; i < numberOfPromoCodesUsed; i++)
-                    Write(Out, PromoCodesUsed[i], EndianWsg);
-                int numberOfPromoCodesRequiringNotification = PromoCodesRequiringNotification.Count;
-                Write(Out, numberOfPromoCodesRequiringNotification, EndianWsg);
-                for (int i = 0; i < numberOfPromoCodesRequiringNotification; i++)
-                    Write(Out, PromoCodesRequiringNotification[i], EndianWsg);
-            }
- 
+            int numberOfPromoCodesUsed = PromoCodesUsed.Count;
+            Write(Out, numberOfPromoCodesUsed, EndianWsg);
+            for (int i = 0; i < numberOfPromoCodesUsed; i++)
+                Write(Out, PromoCodesUsed[i], EndianWsg);
+            int numberOfPromoCodesRequiringNotification = PromoCodesRequiringNotification.Count;
+            Write(Out, numberOfPromoCodesRequiringNotification, EndianWsg);
+            for (int i = 0; i < numberOfPromoCodesRequiringNotification; i++)
+                Write(Out, PromoCodesRequiringNotification[i], EndianWsg);
             Write(Out, NumberOfEchoLists, EndianWsg);
             for (int listIndex = 0; listIndex < NumberOfEchoLists; listIndex++)
             {

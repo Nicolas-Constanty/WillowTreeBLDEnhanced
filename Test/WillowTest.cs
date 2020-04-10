@@ -196,6 +196,7 @@ namespace Test
                     var output = outputDir.FullName + @"\" + collection.Name;
                     ws.SaveWsg(output);
                     //FileAssert.AreEqual(collection.FullName, output);
+                    ws.LoadWsg(output);
                     count++;
                     consoleOutput.Dispose();
                 }

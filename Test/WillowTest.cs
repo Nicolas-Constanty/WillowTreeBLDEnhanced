@@ -75,8 +75,6 @@ namespace Test
         [TestMethod]
         public void ReadExtended()
         {
-            var ws = new WillowSaveGame();
-
             string path = Directory.GetCurrentDirectory() + @"\ReadTest\Extended";
 
             DirectoryInfo d = new DirectoryInfo(path);//Assuming Test is your Folder
@@ -95,6 +93,7 @@ namespace Test
                 consoleOutput = new ConsoleOutput();
                 try
                 {
+                    var ws = new WillowSaveGame();
                     ws.LoadWsg(collection.FullName);
                     count++;
                     consoleOutput.Dispose();
@@ -116,8 +115,6 @@ namespace Test
         [TestMethod]
         public void ReadOld()
         {
-            var ws = new WillowSaveGame();
-
             string path = Directory.GetCurrentDirectory() + @"\ReadTest\Vanilla";
 
             DirectoryInfo d = new DirectoryInfo(path);//Assuming Test is your Folder
@@ -136,6 +133,7 @@ namespace Test
                 consoleOutput = new ConsoleOutput();
                 try
                 {
+                    var ws = new WillowSaveGame();
                     ws.LoadWsg(collection.FullName);
                     count++;
                     consoleOutput.Dispose();
@@ -172,8 +170,6 @@ namespace Test
         [TestMethod]
         public void Write()
         {
-            var ws = new WillowSaveGame();
-
             string path = Directory.GetCurrentDirectory() + @"\ReadTest\Extended";
 
             DirectoryInfo d = new DirectoryInfo(path);//Assuming Test is your Folder
@@ -192,6 +188,8 @@ namespace Test
                 consoleOutput = new ConsoleOutput();
                 try
                 {
+                    var ws = new WillowSaveGame();
+
                     ws.LoadWsg(collection.FullName);
                     var output = outputDir.FullName + @"\" + collection.Name;
                     ws.SaveWsg(output);

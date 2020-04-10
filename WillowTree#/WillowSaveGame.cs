@@ -1057,13 +1057,10 @@ namespace WillowTree
 
             if (RevisionNumber >= EnhancedVersion)
             {
-                Unknown2 = ReadBytes(testReader, 93, EndianWsg);
+                Unknown2 = ReadBytes(testReader, 85, EndianWsg);
             }
-            else
-            {
-                PromoCodesUsed = ReadListInt32(testReader, EndianWsg);
-                PromoCodesRequiringNotification = ReadListInt32(testReader, EndianWsg);
-            }
+            PromoCodesUsed = ReadListInt32(testReader, EndianWsg);
+            PromoCodesRequiringNotification = ReadListInt32(testReader, EndianWsg);
             NumberOfEchoLists = ReadEchoes(testReader, EndianWsg);
 
             Dlc.DataSections = new List<DlcSection>();
